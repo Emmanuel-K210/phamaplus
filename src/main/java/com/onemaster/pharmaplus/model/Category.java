@@ -1,4 +1,4 @@
-package com.onemaster.pharmapus.model;
+package com.onemaster.pharmaplus.model;
 
 import java.time.LocalDateTime;
 

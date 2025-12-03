@@ -1,6 +1,7 @@
 package com.onemaster.pharmaplus.service;
 
-import com.onemaster.pharmaplus.dao.SupplierDAO;
+
+import com.onemaster.pharmaplus.dao.impl.SupplierDAO;
 import com.onemaster.pharmaplus.model.Supplier;
 import java.util.List;
 

@@ -165,7 +165,7 @@
                 <p class="text-muted">Système de gestion de pharmacie © 2024</p>
             </div>
             <div class="col-md-6 text-end">
-                <small class="text-muted">Version 1.0 - Projet Académique</small>
+                <small class="text-muted">Version 1.0 - One Master</small>
             </div>
         </div>
     </footer>

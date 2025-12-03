@@ -60,9 +60,9 @@
 
             <div class="alert alert-danger mb-4">
                 <i class="bi bi-exclamation-octagon"></i>
-                <strong>Erreur :</strong> La requête avec la méthode
+                <strong>Erreur :</strong> Nous Rencontrons un probleme interne
                 <code class="fw-bold">${pageContext.errorData.requestMethod}</code>
-                n'est pas supportée pour cette URL.
+                <span> Nous sommes actuellement entrain de le resourde si le problème persiste contacter l'equipe de dévelloppement</span>.
             </div>
 
             <div class="method-list mb-4">

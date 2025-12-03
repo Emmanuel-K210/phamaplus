@@ -1,275 +1,129 @@
-<%-- /WEB-INF/views/customers/add.jsp --%>
+<%-- /WEB-INF/views/customers/form.jsp --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <div class="container-fluid">
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="mb-1">
-                        <i class="bi bi-person-plus text-primary me-2"></i>Ajouter un Client
+                        <i class="bi bi-person-plus text-primary me-2"></i>
+                        <c:choose>
+                            <c:when test="${not empty customer}">Modifier le Client</c:when>
+                            <c:otherwise>Ajouter un Client</c:otherwise>
+                        </c:choose>
                     </h2>
                     <p class="text-muted mb-0">
-                        Enregistrez les informations d'un nouveau client
+                        <i class="bi bi-info-circle me-1"></i>
+                        Remplissez les informations du client
                     </p>
                 </div>
-                <a href="${pageContext.request.contextPath}/customers" class="btn btn-modern btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Retour à la liste
-                </a>
+                <div>
+                    <a href="${pageContext.request.contextPath}/customers" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Messages d'erreur -->
-    <c:if test="${not empty errorMessage}">
-        <div class="alert alert-danger alert-dismissible fade show modern-card mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>${errorMessage}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    </c:if>
-
     <!-- Formulaire -->
     <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="modern-card p-4">
-                <form id="customerForm" method="post" action="${pageContext.request.contextPath}/customers/add">
-
-                    <!-- Informations personnelles -->
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-2 mb-3">
-                            <i class="bi bi-person me-2"></i>Informations Personnelles
-                        </h5>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form action="${pageContext.request.contextPath}/customers/save" method="post">
+                        <c:if test="${not empty customer}">
+                            <input type="hidden" name="id" value="${customer.customerId}">
+                        </c:if>
 
                         <div class="row g-3">
+                            <!-- Nom et Prénom -->
                             <div class="col-md-6">
-                                <label for="lastName" class="form-label">
-                                    Nom <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control modern-input"
-                                       id="lastName" name="lastName"
-                                       value="${customer.lastName}"
-                                       required>
-                                <div class="invalid-feedback">
-                                    Veuillez saisir le nom du client
-                                </div>
+                                <label class="form-label">Prénom *</label>
+                                <input type="text" class="form-control" name="firstName"
+                                       value="${customer.firstName}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nom *</label>
+                                <input type="text" class="form-control" name="lastName"
+                                       value="${customer.lastName}" required>
                             </div>
 
+                            <!-- Contact -->
                             <div class="col-md-6">
-                                <label for="firstName" class="form-label">
-                                    Prénom <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control modern-input"
-                                       id="firstName" name="firstName"
-                                       value="${customer.firstName}"
-                                       required>
-                                <div class="invalid-feedback">
-                                    Veuillez saisir le prénom du client
-                                </div>
+                                <label class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" name="phone"
+                                       value="${customer.phone}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email"
+                                       value="${customer.email}">
                             </div>
 
+                            <!-- Date de naissance -->
                             <div class="col-md-6">
-                                <label for="dateOfBirth" class="form-label">
-                                    Date de Naissance
-                                </label>
-                                <input type="date" class="form-control modern-input"
-                                       id="dateOfBirth" name="dateOfBirth"
-                                       value="${customer.dateOfBirth}"
-                                       max="<%= java.time.LocalDate.now() %>">
-                                <small class="text-muted">L'âge sera calculé automatiquement</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Coordonnées -->
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-2 mb-3">
-                            <i class="bi bi-telephone me-2"></i>Coordonnées
-                        </h5>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="phone" class="form-label">
-                                    Téléphone <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">
-                                        <i class="bi bi-telephone"></i>
-                                    </span>
-                                    <input type="tel" class="form-control modern-input"
-                                           id="phone" name="phone"
-                                           value="${customer.phone}"
-                                           placeholder="032 12 345 67"
-                                           required>
-                                </div>
-                                <div id="phoneError" class="text-danger small mt-1"></div>
+                                <label class="form-label">Date de naissance</label>
+                                <input type="date" class="form-control" name="dateOfBirth"
+                                       value="${customer.dateOfBirth}">
                             </div>
 
-                            <div class="col-md-6">
-                                <label for="email" class="form-label">
-                                    Email
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">
-                                        <i class="bi bi-envelope"></i>
-                                    </span>
-                                    <input type="email" class="form-control modern-input"
-                                           id="email" name="email"
-                                           value="${customer.email}"
-                                           placeholder="client@example.com">
-                                </div>
-                                <div id="emailError" class="text-danger small mt-1"></div>
-                            </div>
-
+                            <!-- Adresse -->
                             <div class="col-12">
-                                <label for="address" class="form-label">
-                                    Adresse Complète
-                                </label>
-                                <textarea class="form-control modern-input"
-                                          id="address" name="address"
-                                          rows="2"
-                                          placeholder="Numéro, rue, quartier, ville...">${customer.address}</textarea>
+                                <label class="form-label">Adresse</label>
+                                <textarea class="form-control" name="address" rows="2">${customer.address}</textarea>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Informations médicales -->
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-2 mb-3">
-                            <i class="bi bi-heart-pulse me-2"></i>Informations Médicales
-                        </h5>
-
-                        <div class="row g-3">
+                            <!-- Allergies -->
                             <div class="col-12">
-                                <label for="allergies" class="form-label">
-                                    Allergies Connues
-                                </label>
-                                <textarea class="form-control modern-input"
-                                          id="allergies" name="allergies"
-                                          rows="3"
-                                          placeholder="Listez les allergies connues du client (médicaments, substances, etc.)">${customer.allergies}</textarea>
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Ces informations sont importantes pour la sécurité du client
-                                </small>
+                                <label class="form-label">Allergies / Notes médicales</label>
+                                <textarea class="form-control" name="allergies" rows="3">${customer.allergies}</textarea>
+                                <small class="text-muted">Listez les allergies médicamenteuses ou alimentaires</small>
+                            </div>
+
+                            <!-- Boutons -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between">
+                                    <button type="reset" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Annuler
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>
+                                        <c:choose>
+                                            <c:when test="${not empty customer}">Modifier le Client</c:when>
+                                            <c:otherwise>Ajouter le Client</c:otherwise>
+                                        </c:choose>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Boutons d'action -->
-                    <div class="d-flex justify-content-between pt-3 border-top">
-                        <a href="${pageContext.request.contextPath}/customers"
-                           class="btn btn-modern btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </a>
-                        <div class="d-flex gap-2">
-                            <button type="reset" class="btn btn-modern btn-outline-warning">
-                                <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
-                            </button>
-                            <button type="submit" class="btn btn-modern btn-gradient-primary">
-                                <i class="bi bi-save me-2"></i>Enregistrer le Client
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
+        </div>
 
-            <!-- Aide et informations -->
-            <div class="modern-card p-3 mt-3">
-                <h6 class="mb-2">
-                    <i class="bi bi-info-circle text-info me-2"></i>Informations
-                </h6>
-                <ul class="small text-muted mb-0">
-                    <li>Les champs marqués d'une <span class="text-danger">*</span> sont obligatoires</li>
-                    <li>Le numéro de téléphone sera vérifié en temps réel pour éviter les doublons</li>
-                    <li>L'email du client sera utilisé pour les communications futures (facultatif)</li>
-                    <li>Les informations médicales sont confidentielles et sécurisées</li>
-                </ul>
+        <!-- Informations -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informations</h5>
+                </div>
+                <div class="card-body">
+                    <p>Les champs marqués d'un * sont obligatoires.</p>
+                    <p>La saisie des informations médicales est importante pour la sécurité des patients.</p>
+
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+                        <ul class="mb-0">
+                            <li>Vérifiez l'exactitude des coordonnées</li>
+                            <li>Notez toutes les allergies importantes</li>
+                            <li>La date de naissance permet de calculer l'âge automatiquement</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    // Validation du formulaire
-    document.getElementById('customerForm').addEventListener('submit', function(e) {
-        if (!this.checkValidity()) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        this.classList.add('was-validated');
-    });
-
-    // Vérification de l'email en temps réel
-    let emailTimeout;
-    document.getElementById('email').addEventListener('input', function() {
-        clearTimeout(emailTimeout);
-        const email = this.value;
-        const errorDiv = document.getElementById('emailError');
-
-        if (email.length < 3) {
-            errorDiv.textContent = '';
-            return;
-        }
-
-        emailTimeout = setTimeout(() => {
-            fetch('${pageContext.request.contextPath}/customers/check-email?email=' + encodeURIComponent(email))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        errorDiv.textContent = '⚠️ Cet email est déjà utilisé';
-                        this.classList.add('is-invalid');
-                    } else {
-                        errorDiv.textContent = '';
-                        this.classList.remove('is-invalid');
-                    }
-                });
-        }, 500);
-    });
-
-    // Vérification du téléphone en temps réel
-    let phoneTimeout;
-    document.getElementById('phone').addEventListener('input', function() {
-        clearTimeout(phoneTimeout);
-        const phone = this.value;
-        const errorDiv = document.getElementById('phoneError');
-
-        if (phone.length < 3) {
-            errorDiv.textContent = '';
-            return;
-        }
-
-        phoneTimeout = setTimeout(() => {
-            fetch('${pageContext.request.contextPath}/customers/check-phone?phone=' + encodeURIComponent(phone))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        errorDiv.textContent = '⚠️ Ce numéro est déjà utilisé';
-                        this.classList.add('is-invalid');
-                    } else {
-                        errorDiv.textContent = '';
-                        this.classList.remove('is-invalid');
-                    }
-                });
-        }, 500);
-    });
-
-    // Formatage automatique du téléphone
-    document.getElementById('phone').addEventListener('input', function() {
-        let value = this.value.replace(/\D/g, '');
-        if (value.length > 0) {
-            value = value.match(/.{1,3}/g).join(' ');
-        }
-        this.value = value;
-    });
-</script>
-
-<style>
-    .was-validated .form-control:invalid {
-        border-color: #dc3545;
-    }
-
-    .was-validated .form-control:valid {
-        border-color: #198754;
-    }
-</style>
