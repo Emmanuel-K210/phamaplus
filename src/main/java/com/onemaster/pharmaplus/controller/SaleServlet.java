@@ -103,25 +103,52 @@ public class SaleServlet extends HttpServlet {
     private void listSales(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Par défaut, afficher les ventes d'aujourd'hui
-        LocalDate today = LocalDate.now();
-        List<Sale> sales = saleService.getSalesByDate(today);
+        // IMPORTANT: Désactiver le cache
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
 
-        request.setAttribute("sales", sales);
-        request.setAttribute("date", today);
-        request.setAttribute("totalSales", sales.size());
+        try {
+            // Par défaut, afficher les ventes d'aujourd'hui
+            LocalDate today = LocalDate.now();
+            List<Sale> sales = saleService.getSalesByDate(today);
 
-        // Récupérer le résumé du jour
-        SalesSummary summary = saleService.getTodaySummary();
-        request.setAttribute("todaySummary", summary);
+            // Vérifier que les sales ne sont pas null
+            if (sales == null) {
+                sales = new ArrayList<>();
+            }
 
-        // Pour le dashboard - dernières ventes
-        List<Sale> recentSales = sales.size() > 5 ? sales.subList(0, 5) : sales;
-        request.setAttribute("recentSales", recentSales);
+            request.setAttribute("sales", sales);
+            request.setAttribute("date", today);
+            request.setAttribute("totalSales", sales.size());
 
-        request.setAttribute("pageTitle", "Liste des Ventes");
-        request.setAttribute("contentPage", "/WEB-INF/views/sales/list.jsp");
-        request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+            // Récupérer le résumé du jour
+            try {
+                SalesSummary summary = saleService.getTodaySummary();
+                if (summary != null) {
+                    request.setAttribute("todaySales", summary.getRevenue());
+                    request.setAttribute("totalTransactions", summary.getTransactions());
+                    request.setAttribute("avgTicket", summary.getRevenue());
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading sales summary: " + e.getMessage());
+                request.setAttribute("todaySales", 0.0);
+                request.setAttribute("totalTransactions", 0);
+                request.setAttribute("avgTicket", 0.0);
+            }
+
+            request.setAttribute("pageTitle", "Liste des Ventes");
+            request.setAttribute("contentPage", "/WEB-INF/views/sales/list.jsp");
+            request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("errorMessage", "Erreur lors du chargement des ventes: " + e.getMessage());
+            request.setAttribute("sales", new ArrayList<>());
+            request.setAttribute("pageTitle", "Liste des Ventes");
+            request.setAttribute("contentPage", "/WEB-INF/views/sales/list.jsp");
+            request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+        }
     }
 
     private void showNewSaleForm(HttpServletRequest request, HttpServletResponse response)

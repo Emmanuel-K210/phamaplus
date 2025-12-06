@@ -2,6 +2,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
+<%-- Désactiver le cache pour éviter les pages blanches --%>
+<%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+%>
+
 <div class="container-fluid">
     <!-- En-tête -->
     <div class="row mb-4">
@@ -46,7 +53,7 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="mb-1">
+                        <h3 class="mb-1" data-stat-value="${todaySales}">
                             <c:choose>
                                 <c:when test="${not empty todaySales}">
                                     <fmt:formatNumber value="${todaySales}" pattern="#,##0" /> FCFA
@@ -67,7 +74,7 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="mb-1">
+                        <h3 class="mb-1" data-stat-value="${monthSales}">
                             <c:choose>
                                 <c:when test="${not empty monthSales}">
                                     <fmt:formatNumber value="${monthSales}" pattern="#,##0" /> FCFA
@@ -89,7 +96,7 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="mb-1">
+                        <h3 class="mb-1" data-stat-value="${totalTransactions}">
                             <c:choose>
                                 <c:when test="${not empty totalTransactions}">${totalTransactions}</c:when>
                                 <c:otherwise>0</c:otherwise>
@@ -106,7 +113,7 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h3 class="mb-1">
+                        <h3 class="mb-1" data-stat-value="${avgTicket}">
                             <c:choose>
                                 <c:when test="${not empty avgTicket}">
                                     <fmt:formatNumber value="${avgTicket}" pattern="#,##0" /> FCFA
@@ -127,7 +134,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="modern-card p-4">
-                <form action="${pageContext.request.contextPath}/sales" method="get" class="row g-3">
+                <form action="${pageContext.request.contextPath}/sales" method="get" class="row g-3" id="filterForm">
                     <div class="col-md-3">
                         <div class="input-group">
                             <span class="input-group-text bg-light border-0">
@@ -228,11 +235,11 @@
                                         </td>
                                         <td>
                                             <c:choose>
-                                                <c:when test="${sale.itemsCount > 0}">
-                                                    ${sale.itemsCount} article(s)
+                                                <c:when test="${sale.totalItems > 0}">
+                                                    ${sale.totalItems} article(s)
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <span class="text-muted">Détails non disponibles</span>
+                                                    <span class="text-muted">N/A</span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
@@ -240,26 +247,26 @@
                                             <strong class="text-success">
                                                 <fmt:formatNumber value="${sale.totalAmount}" pattern="#,##0" /> FCFA
                                             </strong>
-                                            <c:if test="${sale.discount > 0}">
+                                            <c:if test="${sale.discountAmount > 0}">
                                                 <br>
                                                 <small class="text-danger">
-                                                    -<fmt:formatNumber value="${sale.discount}" pattern="#,##0" /> FCFA
+                                                    -<fmt:formatNumber value="${sale.discountAmount}" pattern="#,##0" /> FCFA
                                                 </small>
                                             </c:if>
                                         </td>
                                         <td>
                                             <span class="badge badge-modern bg-info">
                                                 <c:choose>
-                                                    <c:when test="${sale.paymentMethod == 'CASH'}">
+                                                    <c:when test="${sale.paymentMethod == 'cash'}">
                                                         <i class="bi bi-cash-coin me-1"></i>Espèces
                                                     </c:when>
-                                                    <c:when test="${sale.paymentMethod == 'CARD'}">
+                                                    <c:when test="${sale.paymentMethod == 'card'}">
                                                         <i class="bi bi-credit-card me-1"></i>Carte
                                                     </c:when>
-                                                    <c:when test="${sale.paymentMethod == 'TRANSFER'}">
+                                                    <c:when test="${sale.paymentMethod == 'transfer'}">
                                                         <i class="bi bi-bank me-1"></i>Virement
                                                     </c:when>
-                                                    <c:when test="${sale.paymentMethod == 'MOBILE_MONEY'}">
+                                                    <c:when test="${sale.paymentMethod == 'mobile_payment'}">
                                                         <i class="bi bi-phone me-1"></i>Mobile Money
                                                     </c:when>
                                                     <c:otherwise>
@@ -271,7 +278,7 @@
                                         <td>
                                             <c:choose>
                                                 <c:when test="${not empty sale.saleDate}">
-                                                    ${sale.saleDate}
+                                                    <fmt:formatDate value="${sale.saleDate}" pattern="dd/MM/yyyy HH:mm"/>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="text-muted">N/A</span>
@@ -280,24 +287,24 @@
                                         </td>
                                         <td>
                                             <c:choose>
-                                                <c:when test="${sale.status == 'COMPLETED'}">
+                                                <c:when test="${sale.paymentStatus == 'paid'}">
                                                     <span class="badge badge-modern bg-success">
-                                                        <i class="bi bi-check-circle me-1"></i>Complétée
+                                                        <i class="bi bi-check-circle me-1"></i>Payée
                                                     </span>
                                                 </c:when>
-                                                <c:when test="${sale.status == 'PENDING'}">
+                                                <c:when test="${sale.paymentStatus == 'pending'}">
                                                     <span class="badge badge-modern bg-warning text-dark">
                                                         <i class="bi bi-clock me-1"></i>En attente
                                                     </span>
                                                 </c:when>
-                                                <c:when test="${sale.status == 'CANCELLED'}">
+                                                <c:when test="${sale.paymentStatus == 'refunded'}">
                                                     <span class="badge badge-modern bg-danger">
-                                                        <i class="bi bi-x-circle me-1"></i>Annulée
+                                                        <i class="bi bi-x-circle me-1"></i>Remboursée
                                                     </span>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="badge badge-modern bg-secondary">
-                                                            ${sale.status}
+                                                            ${sale.paymentStatus}
                                                     </span>
                                                 </c:otherwise>
                                             </c:choose>
@@ -308,15 +315,15 @@
                                                    class="btn btn-outline-info" title="Voir détails">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="${pageContext.request.contextPath}/sales/invoice?id=${sale.saleId}"
-                                                   class="btn btn-outline-primary" title="Facture">
-                                                    <i class="bi bi-receipt"></i>
-                                                </a>
-                                                <c:if test="${sale.status == 'PENDING'}">
-                                                    <a href="${pageContext.request.contextPath}/sales/edit?id=${sale.saleId}"
-                                                       class="btn btn-outline-success" title="Modifier">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
+                                                <button type="button" onclick="printInvoice(${sale.saleId})"
+                                                        class="btn btn-outline-primary" title="Imprimer">
+                                                    <i class="bi bi-printer"></i>
+                                                </button>
+                                                <c:if test="${sale.paymentStatus == 'pending'}">
+                                                    <button type="button" onclick="completeSale(${sale.saleId})"
+                                                            class="btn btn-outline-success" title="Marquer comme payée">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
                                                 </c:if>
                                             </div>
                                         </td>
@@ -380,324 +387,253 @@
 </div>
 
 <script>
-(function() {
-    'use strict';
+    (function() {
+        'use strict';
 
-    // ============================================
-    // FONCTIONS MÉTIER
-    // ============================================
+        // Variable globale pour suivre l'état
+        let isInitialized = false;
 
-    /**
-     * Ouvre une nouvelle fenêtre pour imprimer la facture
-     * @param {number} saleId - ID de la vente
-     */
-    function printInvoice(saleId) {
-        if (!saleId) {
-            console.error('Sale ID is required');
-            return;
+        // ============================================
+        // FONCTIONS MÉTIER
+        // ============================================
+
+        function printInvoice(saleId) {
+            if (!saleId) {
+                console.error('Sale ID is required');
+                return;
+            }
+
+            const contextPath = '${pageContext.request.contextPath}';
+            const url = contextPath + '/sales/view?id=' + saleId + '&print=true';
+            const printWindow = window.open(url, '_blank', 'width=800,height=600');
+
+            if (!printWindow) {
+                alert('Veuillez autoriser les fenêtres pop-up pour imprimer la facture');
+            }
         }
 
-        const url = '${pageContext.request.contextPath}/sales/invoice?id=' + saleId + '&print=true';
-        const printWindow = window.open(url, '_blank', 'width=800,height=600');
+        function completeSale(saleId) {
+            if (!saleId) {
+                console.error('Sale ID is required');
+                return;
+            }
 
-        if (!printWindow) {
-            alert('Veuillez autoriser les fenêtres pop-up pour imprimer la facture');
-        }
-    }
-
-    /**
-     * Annule une vente après confirmation
-     * @param {number} saleId - ID de la vente
-     */
-    function cancelSale(saleId) {
-        if (!saleId) {
-            console.error('Sale ID is required');
-            return;
+            if (confirm('Marquer cette vente comme payée ?')) {
+                showLoadingIndicator();
+                const contextPath = '${pageContext.request.contextPath}';
+                window.location.href = contextPath + '/sales/complete?id=' + saleId;
+            }
         }
 
-        if (confirm('Êtes-vous sûr de vouloir annuler cette vente ?\n\nCette action est irréversible et remettra les produits en stock.')) {
-            // Afficher un indicateur de chargement
-            showLoadingIndicator();
+        function showLoadingIndicator() {
+            // Éviter les doublons
+            hideLoadingIndicator();
 
-            window.location.href = '${pageContext.request.contextPath}/sales/cancel?id=' + saleId;
-        }
-    }
-
-    /**
-     * Marque une vente en attente comme complétée
-     * @param {number} saleId - ID de la vente
-     */
-    function completeSale(saleId) {
-        if (!saleId) {
-            console.error('Sale ID is required');
-            return;
+            const indicator = document.createElement('div');
+            indicator.id = 'loadingIndicator';
+            indicator.className = 'position-fixed top-50 start-50 translate-middle';
+            indicator.style.zIndex = '9999';
+            indicator.innerHTML = '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">' +
+                '<span class="visually-hidden">Chargement...</span></div>';
+            document.body.appendChild(indicator);
         }
 
-        if (confirm('Marquer cette vente comme complétée ?')) {
-            showLoadingIndicator();
-
-            window.location.href = '${pageContext.request.contextPath}/sales/complete?id=' + saleId;
+        function hideLoadingIndicator() {
+            const indicator = document.getElementById('loadingIndicator');
+            if (indicator && indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
         }
-    }
 
-    /**
-     * Affiche un indicateur de chargement
-     */
-    function showLoadingIndicator() {
-        const indicator = document.createElement('div');
-        indicator.id = 'loadingIndicator';
-        indicator.className = 'position-fixed top-50 start-50 translate-middle';
-        indicator.style.zIndex = '9999';
-        indicator.innerHTML = `
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Chargement...</span>
-            </div>
-        `;
-        document.body.appendChild(indicator);
-    }
+        function setupAlertAutoDismiss() {
+            const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
 
-    /**
-     * Masque l'indicateur de chargement
-     */
-    function hideLoadingIndicator() {
-        const indicator = document.getElementById('loadingIndicator');
-        if (indicator) {
-            indicator.remove();
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    if (alert && alert.parentNode && typeof bootstrap !== 'undefined') {
+                        try {
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        } catch (e) {
+                            console.error('Error dismissing alert:', e);
+                        }
+                    }
+                }, 5000);
+            });
         }
-    }
 
-    /**
-     * Gère l'auto-dismiss des alertes
-     */
-    function setupAlertAutoDismiss() {
-        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        function initializeTooltips() {
+            if (typeof bootstrap === 'undefined') return;
 
-        alerts.forEach(alert => {
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                try {
+                    new bootstrap.Tooltip(tooltipTriggerEl);
+                } catch (e) {
+                    console.error('Error initializing tooltip:', e);
                 }
-            }, 5000); // 5 secondes
-        });
-    }
+            });
+        }
 
-    /**
-     * Initialise les tooltips Bootstrap
-     */
-    function initializeTooltips() {
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl =>
-            new bootstrap.Tooltip(tooltipTriggerEl)
-        );
-    }
+        function setupFilterForm() {
+            const filterForm = document.getElementById('filterForm');
 
-    /**
-     * Gère la soumission du formulaire de filtres
-     */
-    function setupFilterForm() {
-        const filterForm = document.querySelector('form[action*="/sales"]');
+            if (filterForm) {
+                filterForm.addEventListener('submit', function() {
+                    const inputs = this.querySelectorAll('input, select');
+                    inputs.forEach(function(input) {
+                        if (!input.value || input.value.trim() === '') {
+                            input.disabled = true;
+                        }
+                    });
+                });
+            }
+        }
 
-        if (filterForm) {
-            filterForm.addEventListener('submit', function(e) {
-                // Supprimer les champs vides pour avoir une URL propre
-                const inputs = this.querySelectorAll('input, select');
-                inputs.forEach(input => {
-                    if (!input.value || input.value.trim() === '') {
-                        input.disabled = true;
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+N : Nouvelle vente
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    const contextPath = '${pageContext.request.contextPath}';
+                    window.location.href = contextPath + '/sales/create';
+                }
+
+                // Ctrl+F : Focus sur recherche
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    const searchInput = document.querySelector('input[name="search"]');
+                    if (searchInput) {
+                        searchInput.focus();
+                        searchInput.select();
+                    }
+                }
+            });
+        }
+
+        function animateStats() {
+            const statCards = document.querySelectorAll('.stat-card h3[data-stat-value]');
+
+            statCards.forEach(function(stat) {
+                const value = stat.getAttribute('data-stat-value');
+                if (value && !isNaN(parseFloat(value))) {
+                    const finalValue = parseFloat(value);
+                    if (finalValue > 0) {
+                        animateValue(stat, 0, finalValue, 1000);
+                    }
+                }
+            });
+        }
+
+        function animateValue(element, start, end, duration) {
+            const startTimestamp = Date.now();
+
+            function step() {
+                const now = Date.now();
+                const progress = Math.min((now - startTimestamp) / duration, 1);
+                const currentValue = Math.floor(progress * (end - start) + start);
+
+                const formattedValue = new Intl.NumberFormat('fr-FR').format(currentValue);
+                const text = element.textContent;
+                const newText = text.replace(/[\d,]+/, formattedValue);
+                element.textContent = newText;
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
+        // ============================================
+        // NETTOYAGE
+        // ============================================
+
+        function cleanup() {
+            hideLoadingIndicator();
+
+            // Nettoyer les tooltips
+            if (typeof bootstrap !== 'undefined') {
+                const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                tooltips.forEach(function(el) {
+                    try {
+                        const tooltip = bootstrap.Tooltip.getInstance(el);
+                        if (tooltip) {
+                            tooltip.dispose();
+                        }
+                    } catch (e) {
+                        console.error('Error disposing tooltip:', e);
                     }
                 });
-            });
-        }
-    }
-
-    /**
-     * Ajoute la confirmation pour les actions de suppression
-     */
-    function setupDeleteConfirmations() {
-        const deleteButtons = document.querySelectorAll('[data-action="delete"]');
-
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                if (!confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
-                    e.preventDefault();
-                }
-            });
-        });
-    }
-
-    /**
-     * Formate les montants FCFA
-     */
-    function formatCurrencyDisplay() {
-        const currencyElements = document.querySelectorAll('[data-currency]');
-
-        currencyElements.forEach(element => {
-            const amount = parseFloat(element.dataset.currency);
-            if (!isNaN(amount)) {
-                element.textContent = new Intl.NumberFormat('fr-FR', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(amount) + ' FCFA';
-            }
-        });
-    }
-
-    /**
-     * Gère les raccourcis clavier
-     */
-    function setupKeyboardShortcuts() {
-        document.addEventListener('keydown', function(e) {
-            // Ctrl+N ou Cmd+N : Nouvelle vente
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                e.preventDefault();
-                window.location.href = '${pageContext.request.contextPath}/sales/create';
             }
 
-            // Ctrl+F ou Cmd+F : Focus sur recherche
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                const searchInput = document.querySelector('input[name="search"]');
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
-            }
-        });
-    }
-
-    /**
-     * Ajoute des animations aux statistiques
-     */
-    function animateStats() {
-        const statCards = document.querySelectorAll('.stat-card h3');
-
-        statCards.forEach(stat => {
-            const text = stat.textContent;
-            const numbers = text.match(/[\d,]+/);
-
-            if (numbers && numbers[0]) {
-                const finalValue = parseInt(numbers[0].replace(/,/g, ''));
-                if (!isNaN(finalValue) && finalValue > 0) {
-                    animateValue(stat, 0, finalValue, 1000);
-                }
-            }
-        });
-    }
-
-    /**
-     * Anime une valeur numérique
-     */
-    function animateValue(element, start, end, duration) {
-        const startTimestamp = Date.now();
-        const step = () => {
-            const now = Date.now();
-            const progress = Math.min((now - startTimestamp) / duration, 1);
-            const currentValue = Math.floor(progress * (end - start) + start);
-
-            const formattedValue = new Intl.NumberFormat('fr-FR').format(currentValue);
-            const originalText = element.textContent;
-            element.textContent = originalText.replace(/[\d,]+/, formattedValue);
-
-            if (progress < 1) {
-                requestAnimationFrame(step);
-            }
-        };
-        requestAnimationFrame(step);
-    }
-
-    /**
-     * Gère le tri des colonnes du tableau
-     */
-    function setupTableSorting() {
-        const headers = document.querySelectorAll('.modern-table th');
-
-        headers.forEach(header => {
-            if (!header.querySelector('i.bi-gear')) { // Exclure la colonne Actions
-                header.style.cursor = 'pointer';
-                header.title = 'Cliquer pour trier';
-
-                header.addEventListener('click', function() {
-                    // Fonctionnalité de tri à implémenter côté serveur
-                    console.log('Tri par:', this.textContent.trim());
-                });
-            }
-        });
-    }
-
-    // ============================================
-    // NETTOYAGE
-    // ============================================
-
-    function cleanup() {
-        hideLoadingIndicator();
-
-        // Nettoyer les tooltips
-        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        tooltips.forEach(el => {
-            const tooltip = bootstrap.Tooltip.getInstance(el);
-            if (tooltip) {
-                tooltip.dispose();
-            }
-        });
-    }
-
-    // ============================================
-    // INITIALISATION
-    // ============================================
-
-    function initialize() {
-        // Nettoyer d'abord
-        cleanup();
-
-        // Initialiser les fonctionnalités
-        setupAlertAutoDismiss();
-
-        if (typeof bootstrap !== 'undefined') {
-            initializeTooltips();
+            isInitialized = false;
         }
 
-        setupFilterForm();
-        setupDeleteConfirmations();
-        formatCurrencyDisplay();
-        setupKeyboardShortcuts();
-        setupTableSorting();
+        // ============================================
+        // INITIALISATION
+        // ============================================
 
-        // Animer les stats avec un léger délai
-        setTimeout(animateStats, 100);
+        function initialize() {
+            // Éviter la double initialisation
+            if (isInitialized) {
+                console.log('Already initialized, skipping...');
+                return;
+            }
 
-        // Masquer l'indicateur de chargement si présent
-        hideLoadingIndicator();
-    }
+            console.log('Initializing sales list page...');
 
-    // ============================================
-    // EXPOSER LES FONCTIONS NÉCESSAIRES
-    // ============================================
+            try {
+                // Marquer comme initialisé
+                isInitialized = true;
 
-    // Ces fonctions sont appelées depuis les attributs onclick dans le HTML
-    window.printInvoice = printInvoice;
-    window.cancelSale = cancelSale;
-    window.completeSale = completeSale;
+                // Nettoyer d'abord
+                cleanup();
 
-    // ============================================
-    // LANCEMENT
-    // ============================================
+                // Initialiser les fonctionnalités
+                setupAlertAutoDismiss();
+                initializeTooltips();
+                setupFilterForm();
+                setupKeyboardShortcuts();
 
-    // Initialiser au chargement du DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
-    } else {
-        initialize();
-    }
+                // Animer les stats avec un délai
+                setTimeout(animateStats, 100);
 
-    // Nettoyer au déchargement de la page
-    window.addEventListener('beforeunload', cleanup);
-    window.addEventListener('pagehide', cleanup);
+                // Masquer l'indicateur de chargement
+                hideLoadingIndicator();
 
-    // Nettoyer aussi au changement de page (SPA-like behavior)
-    window.addEventListener('unload', cleanup);
+                console.log('Sales list page initialized successfully');
+            } catch (e) {
+                console.error('Error during initialization:', e);
+                isInitialized = false;
+            }
+        }
 
-})();
+        // ============================================
+        // EXPOSER LES FONCTIONS NÉCESSAIRES
+        // ============================================
+
+        window.printInvoice = printInvoice;
+        window.completeSale = completeSale;
+
+        // ============================================
+        // LANCEMENT
+        // ============================================
+
+        // Nettoyer au déchargement
+        window.addEventListener('beforeunload', cleanup);
+        window.addEventListener('pagehide', cleanup);
+
+        // Initialiser au chargement du DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            // DOM déjà chargé
+            initialize();
+        }
+
+    })();
 </script>
 
 <style>
@@ -789,8 +725,6 @@
 
     .modern-table tbody tr:hover {
         background-color: #f8f9fa;
-        transform: scale(1.01);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .modern-table td {

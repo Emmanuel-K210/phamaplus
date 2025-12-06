@@ -4,7 +4,12 @@
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%@ page import="java.time.LocalDate" %>
 
+<%-- Désactiver le cache pour éviter les pages blanches --%>
 <%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+
     java.time.LocalDate today = java.time.LocalDate.now();
     java.time.format.DateTimeFormatter htmlDateFormatter =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -68,212 +73,230 @@
                     </div>
                 </c:if>
 
-                <form action="${pageContext.request.contextPath}/inventory/update" method="post" id="editForm">
-                    <input type="hidden" name="inventoryId" value="${inventory.inventoryId}">
-
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-3 mb-3">
-                            <i class="bi bi-box-seam text-primary me-2"></i>Informations Produit
-                        </h5>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="productId" class="form-label">
-                                    <i class="bi bi-capsule me-1"></i>Produit <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select modern-input" id="productId" name="productId" required
-                                        onchange="updateProductInfo(this.value)">
-                                    <option value="">Sélectionner un produit</option>
-                                    <c:forEach var="product" items="${products}">
-                                        <option value="${product.productId}"
-                                            ${inventory.productId == product.productId ? 'selected' : ''}
-                                                data-price="${product.unitPrice}"
-                                                data-selling="${product.sellingPrice}">
-                                                ${product.productName}
-                                            <c:if test="${not empty product.genericName}">
-                                                - ${product.genericName}
-                                            </c:if>
-                                        </option>
-                                    </c:forEach>
-                                </select>
-                                <div class="form-text">
-                                    <span id="productInfo"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="batchNumber" class="form-label">
-                                    <i class="bi bi-upc me-1"></i>Numéro de Lot <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control modern-input" id="batchNumber"
-                                           name="batchNumber" value="${inventory.batchNumber}" required
-                                           placeholder="EX: LOT202401001">
-                                    <button type="button" class="btn btn-outline-secondary" onclick="generateBatchNumber()">
-                                        <i class="bi bi-arrow-clockwise"></i> Générer
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="supplierId" class="form-label">
-                                    <i class="bi bi-truck me-1"></i>Fournisseur
-                                </label>
-                                <select class="form-select modern-input" id="supplierId" name="supplierId">
-                                    <option value="">Sélectionner un fournisseur</option>
-                                    <c:forEach var="supplier" items="${suppliers}">
-                                        <option value="${supplier.supplierId}"
-                                            ${inventory.supplierId == supplier.supplierId ? 'selected' : ''}>
-                                                ${supplier.name}
-                                        </option>
-                                    </c:forEach>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="location" class="form-label">
-                                    <i class="bi bi-geo-alt me-1"></i>Emplacement
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-shelves"></i></span>
-                                    <input type="text" class="form-control modern-input" id="location"
-                                           name="location" value="${inventory.location}"
-                                           placeholder="Ex: Rayon A, Étagère 3">
-                                </div>
-                            </div>
+                <!-- Vérifier que l'inventaire existe -->
+                <c:choose>
+                    <c:when test="${empty inventory}">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Lot non trouvé ou erreur de chargement.
+                            <a href="${pageContext.request.contextPath}/inventory" class="alert-link">
+                                Retour à l'inventaire
+                            </a>
                         </div>
-                    </div>
+                    </c:when>
+                    <c:otherwise>
 
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-3 mb-3">
-                            <i class="bi bi-boxes text-success me-2"></i>Quantité et Prix
-                        </h5>
+                        <form action="${pageContext.request.contextPath}/inventory/update" method="post" id="editForm">
+                            <input type="hidden" name="inventoryId" value="${inventory.inventoryId}">
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="quantity" class="form-label">
-                                        <i class="bi bi-123 me-1"></i>Quantité en Stock <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-10)">-10</button>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)"><i class="bi bi-dash"></i></button>
-                                        <input type="number" class="form-control modern-input text-center"
-                                               id="quantity" name="quantity" min="0" max="9999"
-                                               value="${inventory.quantityInStock}" required>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)"><i class="bi bi-plus"></i></button>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(10)">+10</button>
-                                        <span class="input-group-text">unités</span>
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-3 mb-3">
+                                    <i class="bi bi-box-seam text-primary me-2"></i>Informations Produit
+                                </h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="productId" class="form-label">
+                                            <i class="bi bi-capsule me-1"></i>Produit <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select modern-input" id="productId" name="productId" required
+                                                onchange="updateProductInfo(this.value)">
+                                            <option value="">Sélectionner un produit</option>
+                                            <c:forEach var="product" items="${products}">
+                                                <option value="${product.productId}"
+                                                    ${inventory.productId == product.productId ? 'selected' : ''}
+                                                        data-price="${product.unitPrice}"
+                                                        data-selling="${product.sellingPrice}">
+                                                        ${product.productName}
+                                                    <c:if test="${not empty product.genericName}">
+                                                        - ${product.genericName}
+                                                    </c:if>
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                        <div class="form-text">
+                                            <span id="productInfo"></span>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="mb-3">
-                                    <label for="quantityReserved" class="form-label">
-                                        <i class="bi bi-lock me-1"></i>Quantité Réservée
-                                    </label>
-                                    <input type="number" class="form-control modern-input" id="quantityReserved"
-                                           name="quantityReserved" min="0"
-                                           value="${inventory.quantityReserved != null ? inventory.quantityReserved : 0}">
+                                    <div class="col-md-6">
+                                        <label for="batchNumber" class="form-label">
+                                            <i class="bi bi-upc me-1"></i>Numéro de Lot <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control modern-input" id="batchNumber"
+                                                   name="batchNumber" value="${inventory.batchNumber}" required
+                                                   placeholder="EX: LOT202401001">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="generateBatchNumber()">
+                                                <i class="bi bi-arrow-clockwise"></i> Générer
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="supplierId" class="form-label">
+                                            <i class="bi bi-truck me-1"></i>Fournisseur
+                                        </label>
+                                        <select class="form-select modern-input" id="supplierId" name="supplierId">
+                                            <option value="">Sélectionner un fournisseur</option>
+                                            <c:forEach var="supplier" items="${suppliers}">
+                                                <option value="${supplier.supplierId}"
+                                                    ${inventory.supplierId == supplier.supplierId ? 'selected' : ''}>
+                                                        ${supplier.name}
+                                                </option>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="location" class="form-label">
+                                            <i class="bi bi-geo-alt me-1"></i>Emplacement
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-shelves"></i></span>
+                                            <input type="text" class="form-control modern-input" id="location"
+                                                   name="location" value="${inventory.location}"
+                                                   placeholder="Ex: Rayon A, Étagère 3">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="purchasePrice" class="form-label">
-                                        <i class="bi bi-cash me-1"></i>Prix d'Achat Unitaire
-                                    </label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control modern-input" id="purchasePrice"
-                                               name="purchasePrice" step="1" min="0"
-                                               value="${inventory.purchasePrice != null ? inventory.purchasePrice : 0}">
-                                        <span class="input-group-text">FCFA</span>
-                                    </div>
-                                </div>
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-3 mb-3">
+                                    <i class="bi bi-boxes text-success me-2"></i>Quantité et Prix
+                                </h5>
 
-                                <div class="mb-3">
-                                    <label for="sellingPrice" class="form-label">
-                                        <i class="bi bi-tag me-1"></i>Prix de Vente Unitaire
-                                    </label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control modern-input" id="sellingPrice"
-                                               name="sellingPrice" step="1" min="0"
-                                               value="${inventory.sellingPrice != null ? inventory.sellingPrice : 0}">
-                                        <span class="input-group-text">FCFA</span>
-                                    </div>
-                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="quantity" class="form-label">
+                                                <i class="bi bi-123 me-1"></i>Quantité en Stock <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-10)">-10</button>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)"><i class="bi bi-dash"></i></button>
+                                                <input type="number" class="form-control modern-input text-center"
+                                                       id="quantity" name="quantity" min="0" max="9999"
+                                                       value="${inventory.quantityInStock}" required>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)"><i class="bi bi-plus"></i></button>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(10)">+10</button>
+                                                <span class="input-group-text">unités</span>
+                                            </div>
+                                        </div>
 
-                                <div class="alert alert-info p-2">
-                                    <div class="d-flex justify-content-between">
-                                        <small>Valeur totale du stock:</small>
-                                        <strong id="totalValue">
-                                            <fmt:formatNumber value="${inventory.quantityInStock * (inventory.purchasePrice != null ? inventory.purchasePrice : 0)}" pattern="#,##0"/> FCFA
-                                        </strong>
+                                        <div class="mb-3">
+                                            <label for="quantityReserved" class="form-label">
+                                                <i class="bi bi-lock me-1"></i>Quantité Réservée
+                                            </label>
+                                            <input type="number" class="form-control modern-input" id="quantityReserved"
+                                                   name="quantityReserved" min="0"
+                                                   value="${inventory.quantityReserved != null ? inventory.quantityReserved : 0}">
+                                            <small class="text-muted">
+                                                Disponible: <strong id="availableQty">0</strong> unités
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="purchasePrice" class="form-label">
+                                                <i class="bi bi-cash me-1"></i>Prix d'Achat Unitaire
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control modern-input" id="purchasePrice"
+                                                       name="purchasePrice" step="1" min="0"
+                                                       value="${inventory.purchasePrice != null ? inventory.purchasePrice : 0}">
+                                                <span class="input-group-text">FCFA</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="sellingPrice" class="form-label">
+                                                <i class="bi bi-tag me-1"></i>Prix de Vente Unitaire
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control modern-input" id="sellingPrice"
+                                                       name="sellingPrice" step="1" min="0"
+                                                       value="${inventory.sellingPrice != null ? inventory.sellingPrice : 0}">
+                                                <span class="input-group-text">FCFA</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info p-2">
+                                            <div class="d-flex justify-content-between">
+                                                <small>Valeur totale du stock:</small>
+                                                <strong id="totalValue">0 FCFA</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-3 mb-3">
-                            <i class="bi bi-calendar text-info me-2"></i>Dates Importantes
-                        </h5>
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-3 mb-3">
+                                    <i class="bi bi-calendar text-info me-2"></i>Dates Importantes
+                                </h5>
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="manufacturingDate" class="form-label">
-                                        <i class="bi bi-calendar-check me-1"></i>Date de Fabrication
-                                    </label>
-                                    <input type="date" class="form-control modern-input" id="manufacturingDate"
-                                           name="manufacturingDate"
-                                           value="<c:if test="${not empty inventory.manufacturingDate}">${inventory.manufacturingDate.format(htmlDateFormatter)}</c:if>"
-                                           max="${today}">
-                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="manufacturingDate" class="form-label">
+                                                <i class="bi bi-calendar-check me-1"></i>Date de Fabrication
+                                            </label>
+                                            <input type="date" class="form-control modern-input" id="manufacturingDate"
+                                                   name="manufacturingDate"
+                                                   value="<c:if test="${not empty inventory.manufacturingDate}">${inventory.manufacturingDate.format(htmlDateFormatter)}</c:if>"
+                                                   max="${today.format(htmlDateFormatter)}">
+                                        </div>
 
-                                <div class="mb-3">
-                                    <label for="receivedDate" class="form-label">
-                                        <i class="bi bi-calendar-plus me-1"></i>Date de Réception
-                                    </label>
-                                    <input type="date" class="form-control modern-input" id="receivedDate"
-                                           name="receivedDate"
-                                           value="<c:if test="${not empty inventory.receivedDate}">${inventory.receivedDate.format(htmlDateFormatter)}</c:if>"
-                                           max="${today}">
-                                </div>
-                            </div>
+                                        <div class="mb-3">
+                                            <label for="receivedDate" class="form-label">
+                                                <i class="bi bi-calendar-plus me-1"></i>Date de Réception
+                                            </label>
+                                            <input type="date" class="form-control modern-input" id="receivedDate"
+                                                   name="receivedDate"
+                                                   value="<c:if test="${not empty inventory.receivedDate}">${inventory.receivedDate.format(htmlDateFormatter)}</c:if>"
+                                                   max="${today.format(htmlDateFormatter)}">
+                                        </div>
+                                    </div>
 
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="expiryDate" class="form-label">
-                                        <i class="bi bi-calendar-x me-1"></i>Date d'Expiration <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="date" class="form-control modern-input" id="expiryDate"
-                                           name="expiryDate" required
-                                           value="<c:if test="${not empty inventory.expiryDate}">${inventory.expiryDate.format(htmlDateFormatter)}</c:if>"
-                                           min="${today}">
-                                    <div class="mt-2">
-                                        <small class="text-muted" id="expiryWarning"></small>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="expiryDate" class="form-label">
+                                                <i class="bi bi-calendar-x me-1"></i>Date d'Expiration <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="date" class="form-control modern-input" id="expiryDate"
+                                                   name="expiryDate" required
+                                                   value="<c:if test="${not empty inventory.expiryDate}">${inventory.expiryDate.format(htmlDateFormatter)}</c:if>"
+                                                   min="${today.format(htmlDateFormatter)}">
+                                            <div class="mt-2">
+                                                <small class="text-muted" id="expiryWarning"></small>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-warning p-3" id="expiryAlert" style="display: none;">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                            <span id="expiryMessage"></span>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="alert alert-warning p-3" id="expiryAlert" style="display: none;">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    <span id="expiryMessage"></span>
-                                </div>
                             </div>
-                        </div>
-                    </div>
 
 
-                    <div class="d-flex gap-3 justify-content-end pt-4 border-top">
-                        <a href="${pageContext.request.contextPath}/inventory" class="btn btn-outline-secondary px-4">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </a>
-                        <button type="submit" class="btn btn-modern btn-gradient-primary px-4">
-                            <i class="bi bi-check-circle me-2"></i>Mettre à Jour
-                        </button>
-                    </div>
-                </form>
+                            <div class="d-flex gap-3 justify-content-end pt-4 border-top">
+                                <a href="${pageContext.request.contextPath}/inventory" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-x-circle me-2"></i>Annuler
+                                </a>
+                                <button type="submit" class="btn btn-modern btn-gradient-primary px-4" id="submitBtn">
+                                    <i class="bi bi-check-circle me-2"></i>Mettre à Jour
+                                </button>
+                            </div>
+                        </form>
+
+                    </c:otherwise>
+                </c:choose>
+
             </div>
         </div>
     </div>
@@ -361,6 +384,7 @@
         'use strict';
 
         let deleteModal = null;
+        let isInitialized = false;
 
         // ============================================
         // FONCTIONS UTILITAIRES
@@ -394,6 +418,7 @@
 
             input.value = newValue;
             calculateTotalValue();
+            updateAvailableQuantity();
             updateReservedMax();
         }
 
@@ -408,6 +433,26 @@
 
             if (parseInt(reserved.value) > qty) {
                 reserved.value = qty;
+            }
+
+            updateAvailableQuantity();
+        }
+
+        function updateAvailableQuantity() {
+            const quantity = parseInt(document.getElementById('quantity')?.value) || 0;
+            const reserved = parseInt(document.getElementById('quantityReserved')?.value) || 0;
+            const available = quantity - reserved;
+
+            const availableElement = document.getElementById('availableQty');
+            if (availableElement) {
+                availableElement.textContent = available;
+                if (available < 0) {
+                    availableElement.className = 'text-danger fw-bold';
+                } else if (available < 10) {
+                    availableElement.className = 'text-warning fw-bold';
+                } else {
+                    availableElement.className = 'text-success fw-bold';
+                }
             }
         }
 
@@ -430,7 +475,7 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            const batchNumber = `LOT${year}${month}${day}${random}`;
+            const batchNumber = 'LOT' + year + month + day + random;
             input.value = batchNumber;
         }
 
@@ -456,15 +501,15 @@
                 alertElement.style.display = 'block';
                 alertElement.className = 'alert alert-danger p-3';
             } else if (diffDays <= 30) {
-                warningElement.innerHTML = `<i class="bi bi-exclamation-triangle text-warning me-1"></i>Expire dans ${diffDays} jours`;
-                messageElement.innerHTML = `Ce produit expire dans ${diffDays} jours. Pensez à le vendre en priorité.`;
+                warningElement.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>Expire dans ' + diffDays + ' jours';
+                messageElement.innerHTML = 'Ce produit expire dans ' + diffDays + ' jours. Pensez à le vendre en priorité.';
                 alertElement.style.display = 'block';
                 alertElement.className = 'alert alert-warning p-3';
             } else if (diffDays <= 90) {
-                warningElement.innerHTML = `<i class="bi bi-info-circle text-info me-1"></i>Expire dans ${diffDays} jours`;
+                warningElement.innerHTML = '<i class="bi bi-info-circle text-info me-1"></i>Expire dans ' + diffDays + ' jours';
                 alertElement.style.display = 'none';
             } else {
-                warningElement.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>Valide (${diffDays} jours restants)`;
+                warningElement.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Valide (' + diffDays + ' jours restants)';
                 alertElement.style.display = 'none';
             }
         }
@@ -481,11 +526,11 @@
 
             let info = '';
             if (price) {
-                info += `<small class="text-muted">Prix d'achat suggéré: ${formatFCFA(price)}</small>`;
+                info += '<small class="text-muted">Prix d\'achat suggéré: ' + formatFCFA(price) + '</small>';
             }
             if (sellingPrice) {
                 if (info) info += '<br>';
-                info += `<small class="text-muted">Prix de vente suggéré: ${formatFCFA(sellingPrice)}</small>`;
+                info += '<small class="text-muted">Prix de vente suggéré: ' + formatFCFA(sellingPrice) + '</small>';
             }
 
             const productInfoElement = document.getElementById('productInfo');
@@ -524,7 +569,9 @@
         }
 
         function deleteInventory() {
-            window.location.href = '${pageContext.request.contextPath}/inventory/delete?id=${inventory.inventoryId}';
+            const contextPath = '${pageContext.request.contextPath}';
+            const inventoryId = '${inventory.inventoryId}';
+            window.location.href = contextPath + '/inventory/delete?id=' + inventoryId;
         }
 
         // ============================================
@@ -567,7 +614,7 @@
                     }
                 }
 
-                const submitBtn = form.querySelector('button[type="submit"]');
+                const submitBtn = document.getElementById('submitBtn');
                 if (submitBtn) {
                     submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enregistrement...';
                     submitBtn.disabled = true;
@@ -582,6 +629,7 @@
         function setupEventListeners() {
             const expiryDateInput = document.getElementById('expiryDate');
             const quantityInput = document.getElementById('quantity');
+            const reservedInput = document.getElementById('quantityReserved');
             const purchasePriceInput = document.getElementById('purchasePrice');
             const productSelect = document.getElementById('productId');
 
@@ -592,8 +640,13 @@
             if (quantityInput) {
                 quantityInput.addEventListener('input', function() {
                     calculateTotalValue();
+                    updateAvailableQuantity();
                     updateReservedMax();
                 });
+            }
+
+            if (reservedInput) {
+                reservedInput.addEventListener('input', updateAvailableQuantity);
             }
 
             if (purchasePriceInput) {
@@ -615,6 +668,7 @@
             if (deleteModal && deleteModal._isShown) {
                 deleteModal.hide();
             }
+            isInitialized = false;
         }
 
         // ============================================
@@ -622,26 +676,41 @@
         // ============================================
 
         function initialize() {
-            cleanup();
-
-            // Initialiser la modal
-            const modalElement = document.getElementById('deleteModal');
-            if (modalElement && typeof bootstrap !== 'undefined') {
-                deleteModal = new bootstrap.Modal(modalElement);
+            if (isInitialized) {
+                console.log('Already initialized, skipping...');
+                return;
             }
 
-            // Initialiser les valeurs
-            calculateTotalValue();
-            checkExpiryDate();
-            setupFormValidation();
+            console.log('Initializing inventory edit page...');
 
-            const productSelect = document.getElementById('productId');
-            if (productSelect) {
-                updateProductInfo(productSelect.value);
+            try {
+                isInitialized = true;
+
+                // Initialiser la modal
+                const modalElement = document.getElementById('deleteModal');
+                if (modalElement && typeof bootstrap !== 'undefined') {
+                    deleteModal = new bootstrap.Modal(modalElement);
+                }
+
+                // Initialiser les valeurs
+                calculateTotalValue();
+                updateAvailableQuantity();
+                checkExpiryDate();
+                setupFormValidation();
+
+                const productSelect = document.getElementById('productId');
+                if (productSelect && productSelect.value) {
+                    updateProductInfo(productSelect.value);
+                }
+
+                updateReservedMax();
+                setupEventListeners();
+
+                console.log('Inventory edit page initialized successfully');
+            } catch (e) {
+                console.error('Error during initialization:', e);
+                isInitialized = false;
             }
-
-            updateReservedMax();
-            setupEventListeners();
         }
 
         // Exposer les fonctions nécessaires globalement
@@ -650,17 +719,147 @@
         window.confirmDelete = confirmDelete;
         window.deleteInventory = deleteInventory;
         window.updateProductInfo = updateProductInfo;
+        // ============================================
+        // PRÉVENTION DES DOUBLES SOUMISSIONS
+        // ============================================
 
-        // Initialiser
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
-        } else {
-            initialize();
+        function preventDoubleSubmission() {
+            const form = document.getElementById('editForm');
+            if (!form) return;
+
+            let isSubmitting = false;
+
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return;
+                }
+
+                isSubmitting = true;
+
+                // Désactiver le bouton
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Traitement...';
+                }
+
+                // Permettre la soumission
+                return true;
+            });
         }
 
-        // Nettoyer au déchargement
-        window.addEventListener('beforeunload', cleanup);
-        window.addEventListener('pagehide', cleanup);
+        // ============================================
+        // GESTION DES ERREURS DE PAGE
+        // ============================================
+
+        function handlePageErrors() {
+            // Vérifier si la page est vide
+            setTimeout(() => {
+                const mainContent = document.querySelector('.modern-card');
+                if (mainContent && mainContent.children.length === 0) {
+                    console.warn('Page content appears empty, attempting recovery...');
+                    window.location.reload();
+                }
+            }, 1000);
+
+            // Détecter les changements de navigation
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    console.log('Page loaded from cache, reinitializing...');
+                    initialize();
+                }
+            });
+
+            // Détecter la navigation avant/arrière
+            if (window.performance && window.performance.navigation) {
+                const nav = window.performance.navigation;
+                if (nav.type === 2) { // Navigation par historique
+                    console.log('Navigated via history, reloading...');
+                    setTimeout(initialize, 100);
+                }
+            }
+        }
+
+        // ============================================
+        // INITIALISATION AVEC DÉLAI POUR LE DOM
+        // ============================================
+
+        function delayedInitialize() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(initialize, 100); // Petit délai pour être sûr
+                });
+            } else {
+                setTimeout(initialize, 100);
+            }
+        }
+
+        // ============================================
+        // POLLING POUR LA VALIDITÉ DE LA SESSION
+        // ============================================
+
+        function startSessionMonitor() {
+            // Vérifier la session toutes les 2 minutes
+            setInterval(function() {
+                fetch('${pageContext.request.contextPath}/api/session-check', {
+                    method: 'HEAD',
+                    credentials: 'include'
+                }).catch(function() {
+                    // Si la session est expirée, rediriger
+                    if (confirm('Votre session a expiré. Rediriger vers la page de connexion?')) {
+                        window.location.href = '${pageContext.request.contextPath}/login';
+                    }
+                });
+            }, 120000); // 2 minutes
+        }
+
+        // ============================================
+        // INITIALISATION COMPLÈTE
+        // ============================================
+
+        function fullInitialize() {
+            try {
+                // Éviter les initialisations multiples
+                if (window.pageInitialized) {
+                    return;
+                }
+                window.pageInitialized = true;
+
+                // Initialiser avec délai
+                delayedInitialize();
+
+                // Prévenir les doubles soumissions
+                preventDoubleSubmission();
+
+                // Gérer les erreurs de page
+                handlePageErrors();
+
+                // Démarrer le monitoring de session (optionnel)
+                // startSessionMonitor();
+
+                // Nettoyer au déchargement
+                window.addEventListener('beforeunload', cleanup);
+                window.addEventListener('pagehide', cleanup);
+
+                // Forcer l'initialisation au cas où
+                setTimeout(initialize, 500);
+
+                console.log('Page initialization complete');
+
+            } catch (error) {
+                console.error('Error in full initialization:', error);
+                // Réessayer après une erreur
+                setTimeout(fullInitialize, 1000);
+            }
+        }
+
+        // ============================================
+        // DÉMARRAGE
+        // ============================================
+
+        // Démarrer l'initialisation complète
+        fullInitialize();
 
     })();
 </script>

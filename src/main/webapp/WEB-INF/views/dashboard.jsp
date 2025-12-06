@@ -39,7 +39,7 @@
                             <h2 class="mb-0 fcfa-amount">
                                 <c:choose>
                                     <c:when test="${not empty todaySummary.revenue}">
-                                        <fmt:formatNumber value="${todaySummary.revenue}" pattern="#,##0.00"/>
+                                        <fmt:formatNumber value="${todaySummary.revenue}" pattern="#,##0"/> F CFA
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
@@ -114,7 +114,7 @@
                             <h2 class="mb-0 fcfa-amount">
                                 <c:choose>
                                     <c:when test="${not empty inventoryValue}">
-                                        <fmt:formatNumber value="${inventoryValue}" pattern="#,##0"/>
+                                        <fmt:formatNumber value="${inventoryValue}" pattern="#,##0"/> F CFA
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
@@ -268,9 +268,9 @@
                             <h3 class="mb-0 text-success fcfa-amount">
                                 <c:choose>
                                     <c:when test="${not empty monthlyRevenue}">
-                                        <fmt:formatNumber value="${monthlyRevenue}" pattern="#,##0"/>
+                                        <fmt:formatNumber value="${monthlyRevenue}" pattern="#,##0"/>F CFA
                                     </c:when>
-                                    <c:otherwise>0</c:otherwise>
+                                    <c:otherwise>0 F CFA</c:otherwise>
                                 </c:choose>
                             </h3>
                         </div>
@@ -341,7 +341,7 @@
                                                 ${product[3]}
                                             </c:when>
                                             <c:otherwise>0</c:otherwise>
-                                        </c:choose>
+                                        </c:choose> F CFA
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -415,7 +415,7 @@
                                                 ${sale.totalAmount}
                                             </c:when>
                                             <c:otherwise>0</c:otherwise>
-                                        </c:choose>
+                                        </c:choose> F CFA
                                     </td>
                                     <td>
                                         <c:choose>
@@ -447,7 +447,7 @@
     </div>
 </div>
 
-<!-- Script pour les montants F CFA -->
+<!-- Script pour les montants F CFA
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Formater tous les montants F CFA
@@ -465,4 +465,4 @@
             }
         });
     });
-</script>
+</script>-->

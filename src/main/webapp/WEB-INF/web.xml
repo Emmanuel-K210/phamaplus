@@ -75,10 +75,10 @@
 
     <!-- Configuration de session -->
     <session-config>
-        <session-timeout>30</session-timeout>
+        <session-timeout>30</session-timeout> <!-- 30 minutes -->
         <cookie-config>
             <http-only>true</http-only>
-            <secure>false</secure>
+            <secure>false</secure> <!-- HTTPS en prod -->
         </cookie-config>
     </session-config>
 

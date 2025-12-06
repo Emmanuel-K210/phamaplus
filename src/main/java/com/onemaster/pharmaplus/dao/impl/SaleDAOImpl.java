@@ -1,6 +1,7 @@
 package com.onemaster.pharmaplus.dao.impl;
 
 import com.onemaster.pharmaplus.config.DatabaseConnection;
+import com.onemaster.pharmaplus.controller.BaseServlet;
 import com.onemaster.pharmaplus.dao.service.SaleDAO;
 import com.onemaster.pharmaplus.model.Sale;
 import com.onemaster.pharmaplus.model.SaleItem;
@@ -10,9 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class SaleDAOImpl implements SaleDAO {
-    
+    static final Logger logger = Logger.getLogger(SaleDAOImpl.class.getName());
 
     @Override
     public Integer insertSale(Sale sale) {
@@ -275,7 +277,11 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return 0;
     }
-    
+
+    private void logInfo(String message) {
+        logger.info("[" + getClass().getSimpleName() + "] " + message);
+    }
+
     @Override
     public List<Object[]> getTopSellingProducts(int limit) {
         List<Object[]> results = new ArrayList<>();

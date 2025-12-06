@@ -24,6 +24,20 @@ public class DashboardServlet extends BaseServlet {
             if (!areServicesAvailable()) {
                 throw new ServletException("Services non disponibles");
             }
+
+            /*
+             * @param request
+             * @param totalProducts
+             * @param lowStockProducts
+             * @param expiredProducts
+             * @param expiringSoon
+             * @param todaySummary
+             * @param monthlyRevenue
+             * @param activeCustomers
+             * @param inventoryValue
+             * @param topProducts
+             * @param recentSales
+             */
             
             // 1. Statistiques produits
             int totalProducts = productService.getTotalProducts();
@@ -37,7 +51,9 @@ public class DashboardServlet extends BaseServlet {
                 LocalDate.now().getYear(), 
                 LocalDate.now().getMonthValue()
             );
-            
+            logInfo("La somme de vente daily : "+todaySummary.getRevenue());
+            logInfo("La somme de vente daily : "+monthlyRevenue);
+
             // 3. Clients actifs
             int activeCustomers = customerService.countAllCustomers();
             
@@ -47,7 +63,7 @@ public class DashboardServlet extends BaseServlet {
             // 5. Top produits et ventes récentes
             List<Object[]> topProducts = saleService.getTopProducts(5);
             List<Sale> recentSales = saleService.getRecentSales(10);
-            
+
             // 6. Préparer les données pour la vue
             prepareDashboardData(request, totalProducts, lowStockProducts, 
                 expiredProducts, expiringSoon, todaySummary, monthlyRevenue,
@@ -64,6 +80,17 @@ public class DashboardServlet extends BaseServlet {
     
     /**
      * Préparation des données pour le dashboard
+     * @param request
+     * @param totalProducts
+     * @param lowStockProducts
+     * @param expiredProducts
+     * @param expiringSoon
+     * @param todaySummary
+     * @param monthlyRevenue
+     * @param activeCustomers
+     * @param inventoryValue
+     * @param topProducts
+     * @param recentSales
      */
     private void prepareDashboardData(HttpServletRequest request,
                                       int totalProducts,

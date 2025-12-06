@@ -421,8 +421,10 @@
         // Définir les dates par défaut (30 derniers jours)
         setPeriod(30);
 
-        // Pré-sélectionner HTML
-        selectFormat('HTML');
+        // Pré-sélectionner HTML après que le DOM soit chargé
+        setTimeout(function() {
+            selectFormat('HTML');
+        }, 100);
     });
 
     // Sélection du type de rapport
@@ -433,9 +435,14 @@
         });
 
         // Sélectionner le type cliqué
-        const selectedCard = document.querySelector(`#type_${type}`).closest('.report-type-card');
-        selectedCard.classList.add('selected');
-        document.getElementById(`type_${type}`).checked = true;
+        const input = document.getElementById('type_' + type);
+        if (input) {
+            const selectedCard = input.closest('.report-type-card');
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+            input.checked = true;
+        }
 
         // Masquer toutes les options
         document.querySelectorAll('.report-options').forEach(option => {
@@ -443,34 +450,52 @@
         });
 
         // Afficher les options correspondantes
-        document.getElementById('additionalOptions').style.display = 'block';
+        const additionalOptions = document.getElementById('additionalOptions');
+        if (additionalOptions) {
+            additionalOptions.style.display = 'block';
+        }
 
-        if (type === 'SALES') {
-            document.getElementById('salesOptions').style.display = 'block';
-        } else if (type === 'STOCK') {
-            document.getElementById('stockOptions').style.display = 'block';
-        } else if (type === 'CUSTOMER') {
-            document.getElementById('customerOptions').style.display = 'block';
-        } else if (type === 'FINANCIAL') {
-            document.getElementById('financialOptions').style.display = 'block';
+        const optionsMap = {
+            'SALES': 'salesOptions',
+            'STOCK': 'stockOptions',
+            'CUSTOMER': 'customerOptions',
+            'FINANCIAL': 'financialOptions'
+        };
+
+        const optionId = optionsMap[type];
+        if (optionId) {
+            const optionElement = document.getElementById(optionId);
+            if (optionElement) {
+                optionElement.style.display = 'block';
+            }
         }
 
         // Mettre à jour l'aide
         updateHelp(type);
 
         // Masquer l'erreur si elle était affichée
-        document.getElementById('reportTypeError').style.display = 'none';
+        const errorElement = document.getElementById('reportTypeError');
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
     }
 
     // Sélection du format
     function selectFormat(format) {
+        // Désélectionner tous les formats
         document.querySelectorAll('.format-card').forEach(card => {
             card.classList.remove('selected');
         });
 
-        const selectedCard = document.querySelector(`#format_${format}`).closest('.format-card');
-        selectedCard.classList.add('selected');
-        document.getElementById(`format_${format}`).checked = true;
+        // Sélectionner le format cliqué
+        const input = document.getElementById('format_' + format);
+        if (input) {
+            const selectedCard = input.closest('.format-card');
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+            input.checked = true;
+        }
     }
 
     // Définir une période
@@ -479,8 +504,11 @@
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
-        document.getElementById('startDate').value = formatDate(startDate);
-        document.getElementById('endDate').value = formatDate(endDate);
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+
+        if (startInput) startInput.value = formatDate(startDate);
+        if (endInput) endInput.value = formatDate(endDate);
     }
 
     // Définir le mois en cours
@@ -489,8 +517,11 @@
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-        document.getElementById('startDate').value = formatDate(firstDay);
-        document.getElementById('endDate').value = formatDate(lastDay);
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+
+        if (startInput) startInput.value = formatDate(firstDay);
+        if (endInput) endInput.value = formatDate(lastDay);
     }
 
     // Formater une date en YYYY-MM-DD
@@ -498,7 +529,7 @@
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return year + '-' + month + '-' + day;
     }
 
     // Mettre à jour l'aide contextuelle
@@ -523,42 +554,59 @@
         };
 
         const help = helpTexts[type];
-        if (help) {
-            document.getElementById('helpContent').innerHTML = `
-                <p class="small mb-2"><strong>${help.title}</strong></p>
-                <p class="small text-muted mb-0">${help.text}</p>
-            `;
+        const helpContent = document.getElementById('helpContent');
+
+        if (help && helpContent) {
+            helpContent.innerHTML =
+                '<p class="small mb-2"><strong>' + help.title + '</strong></p>' +
+                '<p class="small text-muted mb-0">' + help.text + '</p>';
         }
     }
 
     // Validation du formulaire
-    document.getElementById('reportForm').addEventListener('submit', function(e) {
-        const reportType = document.querySelector('input[name="reportType"]:checked');
+    const form = document.getElementById('reportForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const reportType = document.querySelector('input[name="reportType"]:checked');
 
-        if (!reportType) {
-            e.preventDefault();
-            document.getElementById('reportTypeError').style.display = 'block';
-            document.querySelector('.report-type-card').scrollIntoView({ behavior: 'smooth' });
-            return false;
-        }
+            if (!reportType) {
+                e.preventDefault();
+                const errorElement = document.getElementById('reportTypeError');
+                if (errorElement) {
+                    errorElement.style.display = 'block';
+                }
+                const firstCard = document.querySelector('.report-type-card');
+                if (firstCard) {
+                    firstCard.scrollIntoView({ behavior: 'smooth' });
+                }
+                return false;
+            }
 
-        // Validation des dates
-        const startDate = new Date(document.getElementById('startDate').value);
-        const endDate = new Date(document.getElementById('endDate').value);
+            // Validation des dates
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
 
-        if (startDate > endDate) {
-            e.preventDefault();
-            alert('La date de début doit être antérieure à la date de fin');
-            return false;
-        }
+            if (startDateInput && endDateInput) {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
 
-        // Afficher un loader
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Génération...';
+                if (startDate > endDate) {
+                    e.preventDefault();
+                    alert('La date de début doit être antérieure à la date de fin');
+                    return false;
+                }
+            }
 
-        return true;
-    });
+            // Afficher un loader
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Génération...';
+            }
+
+            return true;
+        });
+    }
 </script>
 
 <style>

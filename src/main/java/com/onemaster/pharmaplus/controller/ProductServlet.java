@@ -153,13 +153,25 @@ public class ProductServlet extends BaseServlet {
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        // IMPORTANT: Désactiver le cache
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         try {
-            Integer id = Integer.parseInt(request.getParameter("id"));
+            String idParam = request.getParameter("id");
+
+            if (idParam == null || idParam.trim().isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/products?error=ID+manquant");
+                return;
+            }
+
+            Integer id = Integer.parseInt(idParam);
             Product product = productService.getProductById(id);
 
             if (product != null) {
                 request.setAttribute("product", product);
-                request.setAttribute("pageTitle", "Modifier Produit");
+                request.setAttribute("pageTitle", "Modifier Produit: " + product.getProductName());
                 request.setAttribute("contentPage", "/WEB-INF/views/products/edit.jsp");
                 request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
             } else {
@@ -170,6 +182,7 @@ public class ProductServlet extends BaseServlet {
             response.sendRedirect(request.getContextPath() + "/products?error=ID+invalide");
         } catch (Exception e) {
             logError("Erreur lors de l'affichage du formulaire d'édition", e);
+            e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/products?error=Erreur+interne");
         }
     }
