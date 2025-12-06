@@ -3,23 +3,23 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
 <div class="container-fluid">
-    <!-- En-tête avec salutation -->
+    <!-- En-tête -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="mb-1">
                         <i class="bi bi-speedometer2 text-primary me-2"></i>
-                        Bonjour, ${sessionScope.fullName} 👋
+                        Bonjour, <c:out value="${sessionScope.fullName}"/> 👋
                     </h2>
                     <p class="text-muted mb-0">
                         <i class="bi bi-calendar3 me-2"></i>
                         <jsp:useBean id="now" class="java.util.Date"/>
-                        <fmt:formatDate value="${now}" pattern="EEEE dd MMMM yyyy" />
+                        <fmt:formatDate value="${now}" pattern="EEEE dd MMMM yyyy"/>
                     </p>
                 </div>
                 <div>
-                    <a class="btn btn-modern btn-gradient-primary" href="${pageContext.request.contextPath}/sales">
+                    <a class="btn btn-modern btn-gradient-primary" href="${pageContext.request.contextPath}/sales/new">
                         <i class="bi bi-plus-circle me-2"></i>Nouvelle Vente
                     </a>
                 </div>
@@ -29,16 +29,30 @@
 
     <!-- Cartes statistiques principales -->
     <div class="row g-4 mb-4">
+        <!-- Ventes Aujourd'hui -->
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="stat-card" style="background: var(--primary-gradient);">
                 <div class="position-relative">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Ventes Aujourd'hui</p>
-                            <h2 class="mb-0">2,456 F CFA</h2>
+                            <h2 class="mb-0 fcfa-amount">
+                                <c:choose>
+                                    <c:when test="${not empty todaySummary.revenue}">
+                                        <fmt:formatNumber value="${todaySummary.revenue}" pattern="#,##0.00"/>
+                                    </c:when>
+                                    <c:otherwise>0</c:otherwise>
+                                </c:choose>
+                            </h2>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
-                                    <i class="bi bi-arrow-up me-1"></i>+12.5%
+                                    <c:choose>
+                                        <c:when test="${not empty todaySummary.transactions and todaySummary.transactions > 0}">
+                                            <i class="bi bi-arrow-up me-1"></i>
+                                            <c:out value="${todaySummary.transactions}"/> ventes
+                                        </c:when>
+                                        <c:otherwise>Aucune vente</c:otherwise>
+                                    </c:choose>
                                 </span>
                             </div>
                         </div>
@@ -50,16 +64,35 @@
             </div>
         </div>
 
+        <!-- Produits en Stock -->
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="stat-card" style="background: var(--success-gradient);">
                 <div class="position-relative">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Produits en Stock</p>
-                            <h2 class="mb-0">1,284</h2>
+                            <h2 class="mb-0">
+                                <c:choose>
+                                    <c:when test="${not empty totalProducts}">
+                                        <c:out value="${totalProducts}"/>
+                                    </c:when>
+                                    <c:otherwise>0</c:otherwise>
+                                </c:choose>
+                            </h2>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
-                                    <i class="bi bi-check-circle me-1"></i>Normal
+                                    <c:choose>
+                                        <c:when test="${not empty lowStockProducts and lowStockProducts == 0}">
+                                            <i class="bi bi-check-circle me-1"></i>Normal
+                                        </c:when>
+                                        <c:when test="${not empty lowStockProducts and lowStockProducts > 0}">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            <c:out value="${lowStockProducts}"/> faible
+                                        </c:when>
+                                        <c:otherwise>
+                                            <i class="bi bi-check-circle me-1"></i>Normal
+                                        </c:otherwise>
+                                    </c:choose>
                                 </span>
                             </div>
                         </div>
@@ -71,37 +104,58 @@
             </div>
         </div>
 
+        <!-- Valeur Inventaire -->
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">
+            <div class="stat-card" style="background: var(--warning-gradient);">
                 <div class="position-relative">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="mb-1 opacity-75">Stock Faible</p>
-                            <h2 class="mb-0">23</h2>
+                            <p class="mb-1 opacity-75">Valeur Inventaire</p>
+                            <h2 class="mb-0 fcfa-amount">
+                                <c:choose>
+                                    <c:when test="${not empty inventoryValue}">
+                                        <fmt:formatNumber value="${inventoryValue}" pattern="#,##0"/>
+                                    </c:when>
+                                    <c:otherwise>0</c:otherwise>
+                                </c:choose>
+                            </h2>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>Alerte
+                                    <i class="bi bi-shield-check me-1"></i>Stock
                                 </span>
                             </div>
                         </div>
                         <div class="stat-icon">
-                            <i class="bi bi-arrow-down-circle"></i>
+                            <i class="bi bi-bar-chart"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Clients Actifs -->
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-card" style="background: var(--info-gradient);">
                 <div class="position-relative">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Clients Actifs</p>
-                            <h2 class="mb-0">543</h2>
+                            <h2 class="mb-0">
+                                <c:choose>
+                                    <c:when test="${not empty activeCustomers}">
+                                        <c:out value="${activeCustomers}"/>
+                                    </c:when>
+                                    <c:otherwise>0</c:otherwise>
+                                </c:choose>
+                            </h2>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
-                                    <i class="bi bi-arrow-up me-1"></i>+5.2%
+                                    <c:choose>
+                                        <c:when test="${not empty activeCustomers and activeCustomers > 0}">
+                                            <i class="bi bi-arrow-up me-1"></i>Actif
+                                        </c:when>
+                                        <c:otherwise>Aucun client</c:otherwise>
+                                    </c:choose>
                                 </span>
                             </div>
                         </div>
@@ -114,263 +168,277 @@
         </div>
     </div>
 
-    <!-- Graphiques et alertes -->
+    <!-- Alertes et Actions -->
     <div class="row g-4 mb-4">
-        <!-- Graphique des ventes -->
-        <div class="col-lg-8">
-            <div class="modern-card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0">
-                        <i class="bi bi-graph-up text-primary me-2"></i>
-                        Évolution des Ventes
-                    </h5>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-primary active">Semaine</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary">Mois</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary">Année</button>
-                    </div>
-                </div>
-                <canvas id="salesChart" height="80"></canvas>
-            </div>
-        </div>
-
-        <!-- Alertes importantes -->
+        <!-- Alertes -->
         <div class="col-lg-4">
             <div class="modern-card p-4">
                 <h5 class="mb-4">
                     <i class="bi bi-bell text-danger me-2"></i>
-                    Alertes Importantes
+                    Alertes
                 </h5>
 
-                <div class="alert alert-danger alert-card d-flex align-items-start mb-3">
-                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-                    <div>
-                        <strong>5 produits expirés</strong>
-                        <p class="mb-0 small">Action requise immédiatement</p>
-                        <a href="#" class="btn btn-sm btn-danger mt-2">Voir détails</a>
+                <c:if test="${not empty expiredProducts and expiredProducts > 0}">
+                    <div class="alert alert-danger alert-card d-flex align-items-start mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                        <div>
+                            <strong><c:out value="${expiredProducts}"/> produits expirés</strong>
+                            <p class="mb-0 small">Action requise immédiatement</p>
+                            <a href="${pageContext.request.contextPath}/inventory?filter=expired"
+                               class="btn btn-sm btn-danger mt-2">Voir détails</a>
+                        </div>
+                    </div>
+                </c:if>
+
+                <c:if test="${not empty expiringSoon and expiringSoon > 0}">
+                    <div class="alert alert-warning alert-card d-flex align-items-start mb-3">
+                        <i class="bi bi-clock-fill fs-4 me-3"></i>
+                        <div>
+                            <strong><c:out value="${expiringSoon}"/> produits expirent bientôt</strong>
+                            <p class="mb-0 small">Dans les 30 prochains jours</p>
+                            <a href="${pageContext.request.contextPath}/inventory?filter=expiring"
+                               class="btn btn-sm btn-warning mt-2">Voir détails</a>
+                        </div>
+                    </div>
+                </c:if>
+
+                <c:if test="${not empty lowStockProducts and lowStockProducts > 0}">
+                    <div class="alert alert-info alert-card d-flex align-items-start mb-0">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <div>
+                            <strong><c:out value="${lowStockProducts}"/> produits en stock faible</strong>
+                            <p class="mb-0 small">Réapprovisionnement recommandé</p>
+                            <a href="${pageContext.request.contextPath}/products?filter=lowstock"
+                               class="btn btn-sm btn-info mt-2">Voir détails</a>
+                        </div>
+                    </div>
+                </c:if>
+
+                <c:if test="${(empty expiredProducts or expiredProducts == 0) and
+                              (empty expiringSoon or expiringSoon == 0) and
+                              (empty lowStockProducts or lowStockProducts == 0)}">
+                    <div class="alert alert-success alert-card">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Aucune alerte pour le moment
+                    </div>
+                </c:if>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="col-lg-8">
+            <div class="modern-card p-4 h-100">
+                <h5 class="mb-4">
+                    <i class="bi bi-lightning-charge text-warning me-2"></i>
+                    Actions Rapides
+                </h5>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="${pageContext.request.contextPath}/products/add"
+                           class="btn btn-modern btn-gradient-primary w-100 text-start quick-action">
+                            <i class="bi bi-plus-circle me-2"></i>Ajouter un Produit
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="${pageContext.request.contextPath}/inventory/add"
+                           class="btn btn-modern btn-gradient-success w-100 text-start quick-action">
+                            <i class="bi bi-box-seam me-2"></i>Nouveau Lot
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="${pageContext.request.contextPath}/sales/new"
+                           class="btn btn-modern btn-gradient-info w-100 text-start quick-action">
+                            <i class="bi bi-cart-plus me-2"></i>Nouvelle Vente
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="${pageContext.request.contextPath}/reports"
+                           class="btn btn-modern btn-outline-primary w-100 text-start quick-action">
+                            <i class="bi bi-file-earmark-text me-2"></i>Générer Rapport
+                        </a>
                     </div>
                 </div>
 
-                <div class="alert alert-warning alert-card d-flex align-items-start mb-3">
-                    <i class="bi bi-clock-fill fs-4 me-3"></i>
-                    <div>
-                        <strong>12 produits expirent bientôt</strong>
-                        <p class="mb-0 small">Dans les 30 prochains jours</p>
-                        <a href="#" class="btn btn-sm btn-warning mt-2">Voir détails</a>
-                    </div>
-                </div>
-
-                <div class="alert alert-info alert-card d-flex align-items-start mb-0">
-                    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                    <div>
-                        <strong>23 produits en stock faible</strong>
-                        <p class="mb-0 small">Réapprovisionnement recommandé</p>
-                        <a href="#" class="btn btn-sm btn-info mt-2">Voir détails</a>
+                <!-- Revenu mensuel -->
+                <div class="mt-4 pt-4 border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 text-muted">Revenu du mois</p>
+                            <h3 class="mb-0 text-success fcfa-amount">
+                                <c:choose>
+                                    <c:when test="${not empty monthlyRevenue}">
+                                        <fmt:formatNumber value="${monthlyRevenue}" pattern="#,##0"/>
+                                    </c:when>
+                                    <c:otherwise>0</c:otherwise>
+                                </c:choose>
+                            </h3>
+                        </div>
+                        <div class="text-end">
+                            <p class="mb-1 text-muted">Tendance</p>
+                            <span class="badge bg-success bg-opacity-25 text-success">
+                                <i class="bi bi-arrow-up me-1"></i>Mensuel
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Actions rapides et produits populaires -->
-    <div class="row g-4 mb-4">
-        <!-- Actions rapides -->
-        <div class="col-lg-4">
-            <div class="modern-card p-4">
-                <h5 class="mb-4">
-                    <i class="bi bi-lightning-charge text-warning me-2"></i>
-                    Actions Rapides
-                </h5>
-
-                <div class="d-grid gap-3">
-                    <a href="${pageContext.request.contextPath}/products/add"
-                       class="btn btn-modern btn-gradient-primary text-start quick-action">
-                        <i class="bi bi-plus-circle me-2"></i>Ajouter un Produit
-                    </a>
-                    <a href="${pageContext.request.contextPath}/inventory/add"
-                       class="btn btn-modern btn-gradient-success text-start quick-action">
-                        <i class="bi bi-box-seam me-2"></i>Nouveau Lot
-                    </a>
-                    <a href="#" class="btn btn-modern btn-gradient-info text-start quick-action">
-                        <i class="bi bi-cart-plus me-2"></i>Nouvelle Vente
-                    </a>
-                    <a href="#" class="btn btn-outline-primary text-start quick-action">
-                        <i class="bi bi-file-earmark-text me-2"></i>Générer Rapport
-                    </a>
-                </div>
-            </div>
-        </div>
-
+    <!-- Produits populaires et Ventes récentes -->
+    <div class="row g-4">
         <!-- Top produits -->
-        <div class="col-lg-8">
-            <div class="modern-card p-4">
+        <div class="col-lg-6">
+            <div class="modern-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0">
                         <i class="bi bi-trophy text-warning me-2"></i>
-                        Produits les Plus Vendus
+                        Produits Populaires
                     </h5>
-                    <a href="#" class="text-decoration-none">Voir tout <i class="bi bi-arrow-right"></i></a>
+                    <a href="${pageContext.request.contextPath}/reports?type=top-products"
+                       class="text-decoration-none small">Voir tout <i class="bi bi-arrow-right"></i></a>
                 </div>
 
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                         <tr>
-                            <th>Rang</th>
                             <th>Produit</th>
                             <th>Ventes</th>
                             <th>Revenus</th>
-                            <th>Tendance</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr>
-                            <td>
-                                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex
-                                                align-items-center justify-content-center"
-                                     style="width: 30px; height: 30px;">
-                                    <strong>1</strong>
-                                </div>
-                            </td>
-                            <td>
-                                <strong>Paracétamol 500mg</strong>
-                                <br><small class="text-muted">Analgésique</small>
-                            </td>
-                            <td><strong>342</strong> unités</td>
-                            <td><strong class="text-success">1,710 F CFA</strong></td>
-                            <td>
-                                    <span class="badge badge-modern bg-success">
-                                        <i class="bi bi-arrow-up"></i> +15%
-                                    </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex
-                                                align-items-center justify-content-center"
-                                     style="width: 30px; height: 30px;">
-                                    <strong>2</strong>
-                                </div>
-                            </td>
-                            <td>
-                                <strong>Ibuprofène 400mg</strong>
-                                <br><small class="text-muted">Anti-inflammatoire</small>
-                            </td>
-                            <td><strong>289</strong> unités</td>
-                            <td><strong class="text-success">1,445 F CFA</strong></td>
-                            <td>
-                                    <span class="badge badge-modern bg-success">
-                                        <i class="bi bi-arrow-up"></i> +8%
-                                    </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex
-                                                align-items-center justify-content-center"
-                                     style="width: 30px; height: 30px;">
-                                    <strong>3</strong>
-                                </div>
-                            </td>
-                            <td>
-                                <strong>Vitamine C 1000mg</strong>
-                                <br><small class="text-muted">Supplément</small>
-                            </td>
-                            <td><strong>256</strong> unités</td>
-                            <td><strong class="text-success">1,280 F CFA</strong></td>
-                            <td>
-                                    <span class="badge badge-modern bg-danger">
-                                        <i class="bi bi-arrow-down"></i> -3%
-                                    </span>
-                            </td>
-                        </tr>
+                        <c:if test="${not empty topProducts}">
+                            <c:forEach var="product" items="${topProducts}" varStatus="status">
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                                                     style="width: 35px; height: 35px;">
+                                                    <strong>${status.index + 1}</strong>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <strong>${product[0]}</strong><br>
+                                                <small class="text-muted">${product[1]}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty product[2]}">
+                                                <strong>${product[2]}</strong> unités
+                                            </c:when>
+                                            <c:otherwise>0 unités</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="text-success fcfa-amount">
+                                        <c:choose>
+                                            <c:when test="${not empty product[3]}">
+                                                ${product[3]}
+                                            </c:when>
+                                            <c:otherwise>0</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </c:if>
+
+                        <c:if test="${empty topProducts}">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Aucune donnée de vente disponible
+                                </td>
+                            </tr>
+                        </c:if>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Ventes récentes -->
-    <div class="row">
-        <div class="col-12">
-            <div class="modern-card p-4">
+        <!-- Ventes récentes -->
+        <div class="col-lg-6">
+            <div class="modern-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0">
                         <i class="bi bi-clock-history text-info me-2"></i>
                         Ventes Récentes
                     </h5>
-                    <a href="#" class="text-decoration-none">Voir toutes les ventes <i class="bi bi-arrow-right"></i></a>
+                    <a href="${pageContext.request.contextPath}/sales"
+                       class="text-decoration-none small">Voir toutes <i class="bi bi-arrow-right"></i></a>
                 </div>
 
                 <div class="table-responsive">
                     <table class="table modern-table mb-0">
                         <thead>
                         <tr>
-                            <th><i class="bi bi-hash me-2"></i>N° Vente</th>
-                            <th><i class="bi bi-person me-2"></i>Client</th>
-                            <th><i class="bi bi-box me-2"></i>Produits</th>
-                            <th><i class="bi bi-currency-euro me-2"></i>Montant</th>
-                            <th><i class="bi bi-credit-card me-2"></i>Paiement</th>
-                            <th><i class="bi bi-clock me-2"></i>Heure</th>
-                            <th><i class="bi bi-info-circle me-2"></i>Statut</th>
+                            <th>N° Vente</th>
+                            <th>Client</th>
+                            <th>Montant</th>
+                            <th>Heure</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr class="recent-sale">
-                            <td><strong>#VNT-2024-1234</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                        <i class="bi bi-person text-primary"></i>
-                                    </div>
-                                    <span>Marie Dupont</span>
-                                </div>
-                            </td>
-                            <td>3 articles</td>
-                            <td><strong class="text-success">45.50 F CFA</strong></td>
-                            <td><span class="badge badge-modern bg-info">Carte</span></td>
-                            <td>Il y a 5 min</td>
-                            <td><span class="badge badge-modern bg-success">
-                                    <i class="bi bi-check-circle me-1"></i>Payé
-                                </span></td>
-                        </tr>
-                        <tr class="recent-sale">
-                            <td><strong>#VNT-2024-1233</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-2">
-                                        <i class="bi bi-person text-success"></i>
-                                    </div>
-                                    <span>Jean Martin</span>
-                                </div>
-                            </td>
-                            <td>1 article</td>
-                            <td><strong class="text-success">12.00 F CFA</strong></td>
-                            <td><span class="badge badge-modern bg-success">Espèces</span></td>
-                            <td>Il y a 12 min</td>
-                            <td><span class="badge badge-modern bg-success">
-                                    <i class="bi bi-check-circle me-1"></i>Payé
-                                </span></td>
-                        </tr>
-                        <tr class="recent-sale">
-                            <td><strong>#VNT-2024-1232</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-2">
-                                        <i class="bi bi-person text-warning"></i>
-                                    </div>
-                                    <span>Sophie Bernard</span>
-                                </div>
-                            </td>
-                            <td>5 articles</td>
-                            <td><strong class="text-success">89.75 F CFA</strong></td>
-                            <td><span class="badge badge-modern bg-info">Carte</span></td>
-                            <td>Il y a 25 min</td>
-                            <td><span class="badge badge-modern bg-success">
-                                    <i class="bi bi-check-circle me-1"></i>Payé
-                                </span></td>
-                        </tr>
+                        <c:if test="${not empty recentSales}">
+                            <c:forEach var="sale" items="${recentSales}">
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            <c:choose>
+                                                <c:when test="${not empty sale.reference}">
+                                                    #${sale.reference}
+                                                </c:when>
+                                                <c:otherwise>
+                                                    #N/A
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty sale.customerName}">
+                                                ${sale.customerName}
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="text-muted">Client occasionnel</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="text-success fcfa-amount">
+                                        <c:choose>
+                                            <c:when test="${not empty sale.totalAmount}">
+                                                ${sale.totalAmount}
+                                            </c:when>
+                                            <c:otherwise>0</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${not empty sale.saleDate}">
+                                                <fmt:parseDate value="${sale.saleDate}" pattern="yyyy-MM-dd'T'HH:mm"
+                                                               var="parsedDate" type="both"/>
+                                                <fmt:formatDate value="${parsedDate}" pattern="HH:mm"/>
+                                            </c:when>
+                                            <c:otherwise>--:--</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </c:if>
+
+                        <c:if test="${empty recentSales}">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="bi bi-cart me-2"></i>
+                                    Aucune vente récente
+                                </td>
+                            </tr>
+                        </c:if>
                         </tbody>
                     </table>
                 </div>
@@ -378,3 +446,23 @@
         </div>
     </div>
 </div>
+
+<!-- Script pour les montants F CFA -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Formater tous les montants F CFA
+        document.querySelectorAll('.fcfa-amount').forEach(function (element) {
+            const text = element.textContent.trim();
+            // Extraire le nombre du texte
+            const match = text.match(/[\d,.]+/);
+            const amount = match ? parseFloat(match[0].replace(/,/g, '')) : 0;
+
+            if (!isNaN(amount) && amount > 0) {
+                element.textContent = new Intl.NumberFormat('fr-FR').format(amount) + ' F CFA';
+                element.classList.add('currency-fcfa');
+            } else {
+                element.textContent = '0 F CFA';
+            }
+        });
+    });
+</script>

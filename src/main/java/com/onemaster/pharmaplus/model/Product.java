@@ -1,6 +1,8 @@
 package com.onemaster.pharmaplus.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 public class Product {
     private Integer productId;
@@ -16,6 +18,9 @@ public class Product {
     private Double sellingPrice;
     private Integer reorderLevel = 10;
     private String barcode;
+    private Integer totalSold;
+    private Double totalRevenue;
+    private LocalDateTime lastSoldDate;
     private Boolean isActive = true;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -94,5 +99,39 @@ public class Product {
     @Override
     public String toString() {
         return productName + " (" + genericName + ")";
+    }
+    public Date getCreatedAtAsDate() {
+        if (createdAt == null) return null;
+        return Date.from(createdAt.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    public Date getUpdatedAtAsDate() {
+        if (updatedAt == null) return null;
+        return Date.from(updatedAt.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+
+    public int getTotalSold() {
+        return this.totalSold;
+    }
+
+    public Double getTotalRevenue() {
+        return this.totalRevenue;
+    }
+
+    public LocalDateTime getLastSoldDate(LocalDateTime localDateTime) {
+        return lastSoldDate;
+    }
+
+    public void setTotalSold(int totalSold) {
+        this.totalSold = totalSold;
+    }
+
+    public void setTotalRevenue(Double totalRevenue) {
+        this.totalRevenue = totalRevenue;
+    }
+
+    public void setLastSoldDate(LocalDateTime localDateTime) {
+        this.lastSoldDate = localDateTime;
     }
 }

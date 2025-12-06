@@ -59,6 +59,12 @@
     .badge-modern.bg-secondary {
         background: linear-gradient(135deg, #868e96 0%, #495057 100%) !important;
     }
+
+    /* Style pour l'affichage de la monnaie */
+    .currency-fcfa {
+        font-weight: 600;
+        color: #1e7e34;
+    }
 </style>
 <div class="container-fluid">
     <!-- En-tête -->
@@ -162,14 +168,14 @@
                         <h3 class="mb-1">
                             <c:choose>
                                 <c:when test="${not empty totalValue}">
-                                    <fmt:formatNumber value="${totalValue}" pattern="#,##0.00" /> €
+                                    <fmt:formatNumber value="${totalValue}" pattern="#,##0" /> FCFA
                                 </c:when>
-                                <c:otherwise>0,00 €</c:otherwise>
+                                <c:otherwise>0 FCFA</c:otherwise>
                             </c:choose>
                         </h3>
                         <p class="mb-0 opacity-75">Valeur Totale</p>
                     </div>
-                    <i class="bi bi-currency-euro stat-icon"></i>
+                    <i class="bi bi-cash-stack stat-icon"></i>
                 </div>
             </div>
         </div>
@@ -230,7 +236,7 @@
                             <th><i class="bi bi-tag me-2"></i>Nom Générique</th>
                             <th><i class="bi bi-building me-2"></i>Fabricant</th>
                             <th><i class="bi bi-capsule me-2"></i>Forme</th>
-                            <th><i class="bi bi-currency-euro me-2"></i>Prix</th>
+                            <th><i class="bi bi-cash-stack me-2"></i>Prix</th>
                             <th><i class="bi bi-clipboard-check me-2"></i>Ordonnance</th>
                             <th><i class="bi bi-toggle-on me-2"></i>Statut</th>
                             <th class="text-center"><i class="bi bi-gear me-2"></i>Actions</th>
@@ -306,11 +312,11 @@
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <strong class="text-success">
-                                                    Vente: <fmt:formatNumber value="${product.sellingPrice}" pattern="#,##0.00" /> €
+                                                <strong class="text-success currency-fcfa">
+                                                    Vente: <fmt:formatNumber value="${product.sellingPrice}" pattern="#,##0" /> FCFA
                                                 </strong>
                                                 <small class="text-muted">
-                                                    Achat: <fmt:formatNumber value="${product.unitPrice}" pattern="#,##0.00" /> €
+                                                    Achat: <fmt:formatNumber value="${product.unitPrice}" pattern="#,##0" /> FCFA
                                                 </small>
                                                 <c:if test="${product.unitPrice > 0 and product.sellingPrice > product.unitPrice}">
                                                     <small class="text-success">

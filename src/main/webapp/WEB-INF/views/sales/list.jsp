@@ -380,22 +380,519 @@
 </div>
 
 <script>
-    // Fonction pour imprimer une facture
+(function() {
+    'use strict';
+
+    // ============================================
+    // FONCTIONS MÉTIER
+    // ============================================
+
+    /**
+     * Ouvre une nouvelle fenêtre pour imprimer la facture
+     * @param {number} saleId - ID de la vente
+     */
     function printInvoice(saleId) {
-        window.open('${pageContext.request.contextPath}/sales/invoice?id=' + saleId + '&print=true', '_blank');
+        if (!saleId) {
+            console.error('Sale ID is required');
+            return;
+        }
+
+        const url = '${pageContext.request.contextPath}/sales/invoice?id=' + saleId + '&print=true';
+        const printWindow = window.open(url, '_blank', 'width=800,height=600');
+
+        if (!printWindow) {
+            alert('Veuillez autoriser les fenêtres pop-up pour imprimer la facture');
+        }
     }
 
-    // Fonction pour annuler une vente
+    /**
+     * Annule une vente après confirmation
+     * @param {number} saleId - ID de la vente
+     */
     function cancelSale(saleId) {
-        if (confirm('Êtes-vous sûr de vouloir annuler cette vente ?')) {
+        if (!saleId) {
+            console.error('Sale ID is required');
+            return;
+        }
+
+        if (confirm('Êtes-vous sûr de vouloir annuler cette vente ?\n\nCette action est irréversible et remettra les produits en stock.')) {
+            // Afficher un indicateur de chargement
+            showLoadingIndicator();
+
             window.location.href = '${pageContext.request.contextPath}/sales/cancel?id=' + saleId;
         }
     }
 
-    // Fonction pour compléter une vente en attente
+    /**
+     * Marque une vente en attente comme complétée
+     * @param {number} saleId - ID de la vente
+     */
     function completeSale(saleId) {
+        if (!saleId) {
+            console.error('Sale ID is required');
+            return;
+        }
+
         if (confirm('Marquer cette vente comme complétée ?')) {
+            showLoadingIndicator();
+
             window.location.href = '${pageContext.request.contextPath}/sales/complete?id=' + saleId;
         }
     }
+
+    /**
+     * Affiche un indicateur de chargement
+     */
+    function showLoadingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'loadingIndicator';
+        indicator.className = 'position-fixed top-50 start-50 translate-middle';
+        indicator.style.zIndex = '9999';
+        indicator.innerHTML = `
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        `;
+        document.body.appendChild(indicator);
+    }
+
+    /**
+     * Masque l'indicateur de chargement
+     */
+    function hideLoadingIndicator() {
+        const indicator = document.getElementById('loadingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    /**
+     * Gère l'auto-dismiss des alertes
+     */
+    function setupAlertAutoDismiss() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000); // 5 secondes
+        });
+    }
+
+    /**
+     * Initialise les tooltips Bootstrap
+     */
+    function initializeTooltips() {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl =>
+            new bootstrap.Tooltip(tooltipTriggerEl)
+        );
+    }
+
+    /**
+     * Gère la soumission du formulaire de filtres
+     */
+    function setupFilterForm() {
+        const filterForm = document.querySelector('form[action*="/sales"]');
+
+        if (filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                // Supprimer les champs vides pour avoir une URL propre
+                const inputs = this.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (!input.value || input.value.trim() === '') {
+                        input.disabled = true;
+                    }
+                });
+            });
+        }
+    }
+
+    /**
+     * Ajoute la confirmation pour les actions de suppression
+     */
+    function setupDeleteConfirmations() {
+        const deleteButtons = document.querySelectorAll('[data-action="delete"]');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (!confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
+    /**
+     * Formate les montants FCFA
+     */
+    function formatCurrencyDisplay() {
+        const currencyElements = document.querySelectorAll('[data-currency]');
+
+        currencyElements.forEach(element => {
+            const amount = parseFloat(element.dataset.currency);
+            if (!isNaN(amount)) {
+                element.textContent = new Intl.NumberFormat('fr-FR', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount) + ' FCFA';
+            }
+        });
+    }
+
+    /**
+     * Gère les raccourcis clavier
+     */
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+N ou Cmd+N : Nouvelle vente
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                window.location.href = '${pageContext.request.contextPath}/sales/create';
+            }
+
+            // Ctrl+F ou Cmd+F : Focus sur recherche
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = document.querySelector('input[name="search"]');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+        });
+    }
+
+    /**
+     * Ajoute des animations aux statistiques
+     */
+    function animateStats() {
+        const statCards = document.querySelectorAll('.stat-card h3');
+
+        statCards.forEach(stat => {
+            const text = stat.textContent;
+            const numbers = text.match(/[\d,]+/);
+
+            if (numbers && numbers[0]) {
+                const finalValue = parseInt(numbers[0].replace(/,/g, ''));
+                if (!isNaN(finalValue) && finalValue > 0) {
+                    animateValue(stat, 0, finalValue, 1000);
+                }
+            }
+        });
+    }
+
+    /**
+     * Anime une valeur numérique
+     */
+    function animateValue(element, start, end, duration) {
+        const startTimestamp = Date.now();
+        const step = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTimestamp) / duration, 1);
+            const currentValue = Math.floor(progress * (end - start) + start);
+
+            const formattedValue = new Intl.NumberFormat('fr-FR').format(currentValue);
+            const originalText = element.textContent;
+            element.textContent = originalText.replace(/[\d,]+/, formattedValue);
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
+    /**
+     * Gère le tri des colonnes du tableau
+     */
+    function setupTableSorting() {
+        const headers = document.querySelectorAll('.modern-table th');
+
+        headers.forEach(header => {
+            if (!header.querySelector('i.bi-gear')) { // Exclure la colonne Actions
+                header.style.cursor = 'pointer';
+                header.title = 'Cliquer pour trier';
+
+                header.addEventListener('click', function() {
+                    // Fonctionnalité de tri à implémenter côté serveur
+                    console.log('Tri par:', this.textContent.trim());
+                });
+            }
+        });
+    }
+
+    // ============================================
+    // NETTOYAGE
+    // ============================================
+
+    function cleanup() {
+        hideLoadingIndicator();
+
+        // Nettoyer les tooltips
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(el => {
+            const tooltip = bootstrap.Tooltip.getInstance(el);
+            if (tooltip) {
+                tooltip.dispose();
+            }
+        });
+    }
+
+    // ============================================
+    // INITIALISATION
+    // ============================================
+
+    function initialize() {
+        // Nettoyer d'abord
+        cleanup();
+
+        // Initialiser les fonctionnalités
+        setupAlertAutoDismiss();
+
+        if (typeof bootstrap !== 'undefined') {
+            initializeTooltips();
+        }
+
+        setupFilterForm();
+        setupDeleteConfirmations();
+        formatCurrencyDisplay();
+        setupKeyboardShortcuts();
+        setupTableSorting();
+
+        // Animer les stats avec un léger délai
+        setTimeout(animateStats, 100);
+
+        // Masquer l'indicateur de chargement si présent
+        hideLoadingIndicator();
+    }
+
+    // ============================================
+    // EXPOSER LES FONCTIONS NÉCESSAIRES
+    // ============================================
+
+    // Ces fonctions sont appelées depuis les attributs onclick dans le HTML
+    window.printInvoice = printInvoice;
+    window.cancelSale = cancelSale;
+    window.completeSale = completeSale;
+
+    // ============================================
+    // LANCEMENT
+    // ============================================
+
+    // Initialiser au chargement du DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
+
+    // Nettoyer au déchargement de la page
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('pagehide', cleanup);
+
+    // Nettoyer aussi au changement de page (SPA-like behavior)
+    window.addEventListener('unload', cleanup);
+
+})();
 </script>
+
+<style>
+    /* Styles supplémentaires pour améliorer l'UX */
+
+    .stat-card {
+        border-radius: 15px;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    .modern-card {
+        border-radius: 15px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .modern-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .modern-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .modern-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-modern {
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+
+    .btn-gradient-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .badge-modern {
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .modern-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .modern-table thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .modern-table tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .modern-table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .modern-table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* Animation de chargement */
+    #loadingIndicator {
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Animation d'entrée pour les alertes */
+    .alert {
+        animation: slideInDown 0.3s ease-out;
+    }
+
+    @keyframes slideInDown {
+        from {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Style pour les boutons d'action */
+    .btn-group-sm .btn {
+        padding: 0.375rem 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-group-sm .btn:hover {
+        transform: scale(1.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stat-card {
+            margin-bottom: 1rem;
+        }
+
+        .modern-table {
+            font-size: 0.875rem;
+        }
+
+        .modern-table td {
+            padding: 0.75rem 0.5rem;
+        }
+    }
+
+    /* Animation pour les statistiques */
+    .stat-card h3 {
+        transition: color 0.3s ease;
+    }
+
+    .stat-card:hover h3 {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Style pour les badges de statut */
+    .badge-modern {
+        transition: all 0.2s ease;
+    }
+
+    .badge-modern:hover {
+        transform: scale(1.05);
+    }
+
+    /* Amélioration de la pagination */
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 0.25rem;
+        border: 1px solid #dee2e6;
+        color: #667eea;
+        transition: all 0.2s ease;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    /* Style pour le formulaire de recherche */
+    .input-group-text {
+        background-color: transparent !important;
+    }
+
+    .form-control:focus + .input-group-text,
+    .input-group-text + .form-control:focus {
+        border-color: #667eea;
+    }
+</style>

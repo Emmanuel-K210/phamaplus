@@ -11,25 +11,20 @@ import java.util.List;
 
 public class InventoryDAOImpl implements InventoryDAO {
 
-    private final Connection connection;
-
-    public InventoryDAOImpl() {
-        this.connection = DatabaseConnection.getConnection();
-    }
-
     // ============================
-    // CRUD OPERATIONS
+    // CRUD OPERATIONS - CORRIGÉES
     // ============================
 
     @Override
     public void insert(Inventory inventory) {
         String sql = "INSERT INTO inventory (product_id, batch_number, supplier_id, " +
                 "quantity_in_stock, quantity_reserved, manufacturing_date, " +
-                "expiry_date, purchase_price, received_date, location) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "expiry_date, purchase_price, selling_price, received_date, location) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            setInventoryParameters(stmt, inventory);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            setInventoryParameters(stmt, inventory, false);
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -47,12 +42,13 @@ public class InventoryDAOImpl implements InventoryDAO {
     public void update(Inventory inventory) {
         String sql = "UPDATE inventory SET product_id = ?, batch_number = ?, supplier_id = ?, " +
                 "quantity_in_stock = ?, quantity_reserved = ?, manufacturing_date = ?, " +
-                "expiry_date = ?, purchase_price = ?, received_date = ?, location = ?, updated_at = NOW() " +
+                "expiry_date = ?, purchase_price = ?, selling_price = ?, received_date = ?, " +
+                "location = ?, updated_at = NOW() " +
                 "WHERE inventory_id = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            setInventoryParameters(stmt, inventory);
-            stmt.setInt(11, inventory.getInventoryId());
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            setInventoryParameters(stmt, inventory, true);
             stmt.executeUpdate();
         } catch (SQLException e) {
             handleSQLException("Erreur lors de la mise à jour d'inventaire", e);
@@ -63,7 +59,8 @@ public class InventoryDAOImpl implements InventoryDAO {
     public void delete(Integer inventoryId) {
         String sql = "DELETE FROM inventory WHERE inventory_id = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, inventoryId);
             int rowsAffected = stmt.executeUpdate();
 
@@ -81,13 +78,15 @@ public class InventoryDAOImpl implements InventoryDAO {
 
     @Override
     public Inventory findById(Integer inventoryId) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE inventory_id = ?";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.inventory_id = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, inventoryId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -103,85 +102,93 @@ public class InventoryDAOImpl implements InventoryDAO {
 
     @Override
     public List<Inventory> findAll() {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE quantity_in_stock > 0 " +
-                "ORDER BY expiry_date, product_name";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.quantity_in_stock > 0 " +
+                "ORDER BY i.expiry_date, p.product_name";
 
         return findByQuery(sql);
     }
 
     @Override
     public List<Inventory> findByProductId(Integer productId) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE product_id = ? AND quantity_in_stock > 0 " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.product_id = ? AND i.quantity_in_stock > 0 " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql, productId);
     }
 
     @Override
     public List<Inventory> findExpired() {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE is_expired = TRUE " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "TRUE AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.expiry_date < CURRENT_DATE AND i.quantity_in_stock > 0 " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql);
     }
 
     @Override
     public List<Inventory> findExpiringSoon(int days) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + ? " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + ? " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql, days);
     }
 
     @Override
     public List<Inventory> findByBatchNumber(String batchNumber) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE batch_number ILIKE ? " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.batch_number ILIKE ? " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql, "%" + batchNumber + "%");
     }
 
     @Override
     public List<Inventory> findBySupplierId(Integer supplierId) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE supplier_id = ? " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.supplier_id = ? " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql, supplierId);
     }
 
     @Override
     public Inventory findByProductAndBatch(Integer productId, String batchNumber) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE product_id = ? AND batch_number = ?";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.product_id = ? AND i.batch_number = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, productId);
             stmt.setString(2, batchNumber);
 
@@ -198,36 +205,39 @@ public class InventoryDAOImpl implements InventoryDAO {
 
     @Override
     public List<Inventory> findLowStock(int threshold) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE quantity_in_stock <= ? AND quantity_in_stock > 0 " +
-                "ORDER BY quantity_in_stock";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.quantity_in_stock <= ? AND i.quantity_in_stock > 0 " +
+                "ORDER BY i.quantity_in_stock";
 
         return findByQuery(sql, threshold);
     }
 
     @Override
     public List<Inventory> findByLocation(String location) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE location ILIKE ? " +
-                "ORDER BY location";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.location ILIKE ? " +
+                "ORDER BY i.location";
 
         return findByQuery(sql, "%" + location + "%");
     }
 
     @Override
     public List<Inventory> findByExpiryDateRange(LocalDate start, LocalDate end) {
-        String sql = "SELECT v_inventory.*, p.product_name, s.supplier_name " +
-                "FROM v_inventory " +
-                "JOIN products p ON v_inventory.product_id = p.product_id " +
-                "LEFT JOIN suppliers s ON v_inventory.supplier_id = s.supplier_id " +
-                "WHERE expiry_date BETWEEN ? AND ? " +
-                "ORDER BY expiry_date";
+        String sql = "SELECT i.*, p.product_name, p.generic_name, s.supplier_name, " +
+                "(i.expiry_date < CURRENT_DATE) AS is_expired " +
+                "FROM inventory i " +
+                "JOIN products p ON i.product_id = p.product_id " +
+                "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
+                "WHERE i.expiry_date BETWEEN ? AND ? " +
+                "ORDER BY i.expiry_date";
 
         return findByQuery(sql, Date.valueOf(start), Date.valueOf(end));
     }
@@ -235,6 +245,33 @@ public class InventoryDAOImpl implements InventoryDAO {
     // ============================
     // STOCK OPERATIONS
     // ============================
+
+    @Override
+    public int getTotalStockQuantity(Integer productId) {
+        String sql = "SELECT COALESCE(SUM(i.quantity_in_stock), 0) " +
+                "FROM inventory i " +
+                "WHERE i.product_id = ? AND i.expiry_date >= CURRENT_DATE";
+
+        return getStockSum(sql, productId);
+    }
+
+    @Override
+    public int getAvailableStockQuantity(Integer productId) {
+        String sql = "SELECT COALESCE(SUM(i.quantity_in_stock - i.quantity_reserved), 0) " +
+                "FROM inventory i " +
+                "WHERE i.product_id = ? AND i.expiry_date >= CURRENT_DATE";
+
+        return getStockSum(sql, productId);
+    }
+
+    @Override
+    public int getReservedStockQuantity(Integer productId) {
+        String sql = "SELECT COALESCE(SUM(i.quantity_reserved), 0) " +
+                "FROM inventory i " +
+                "WHERE i.product_id = ? AND i.expiry_date >= CURRENT_DATE";
+
+        return getStockSum(sql, productId);
+    }
 
     @Override
     public boolean reserveStock(Integer inventoryId, Integer quantity) {
@@ -258,85 +295,72 @@ public class InventoryDAOImpl implements InventoryDAO {
     public boolean consumeStock(Integer inventoryId, Integer quantity) {
         String sql = "UPDATE inventory " +
                 "SET quantity_in_stock = quantity_in_stock - ?, " +
-                "quantity_reserved = quantity_reserved - ?, " +
+                "quantity_reserved = GREATEST(0, quantity_reserved - ?), " +
                 "updated_at = NOW() " +
                 "WHERE inventory_id = ? " +
-                "AND quantity_in_stock >= ? " +
-                "AND quantity_reserved >= ?";
+                "AND quantity_in_stock >= ?";
 
-        return updateStock(sql, quantity, quantity, inventoryId, quantity, quantity);
-    }
-
-    @Override
-    public int getTotalStockQuantity(Integer productId) {
-        String sql = "SELECT COALESCE(SUM(quantity_in_stock), 0) " +
-                "FROM v_inventory " +
-                "WHERE product_id = ? AND is_expired = FALSE";
-
-        return getStockSum(sql, productId);
-    }
-
-    @Override
-    public int getAvailableStockQuantity(Integer productId) {
-        String sql = "SELECT COALESCE(SUM(quantity_in_stock - quantity_reserved), 0) " +
-                "FROM v_inventory " +
-                "WHERE product_id = ? AND is_expired = FALSE";
-
-        return getStockSum(sql, productId);
-    }
-
-    @Override
-    public int getReservedStockQuantity(Integer productId) {
-        String sql = "SELECT COALESCE(SUM(quantity_reserved), 0) " +
-                "FROM v_inventory " +
-                "WHERE product_id = ? AND is_expired = FALSE";
-
-        return getStockSum(sql, productId);
+        return updateStock(sql, quantity, quantity, inventoryId, quantity);
     }
 
     @Override
     public void updateExpiryStatus() {
-        System.out.println("Le statut d'expiration est maintenant géré automatiquement via la vue v_inventory");
+        System.out.println("Le statut d'expiration est maintenant calculé dynamiquement dans les requêtes");
     }
 
     // ============================
-    // HELPER METHODS
+    // HELPER METHODS - CORRIGÉES
     // ============================
 
-    private void setInventoryParameters(PreparedStatement stmt, Inventory inventory) throws SQLException {
-        stmt.setInt(1, inventory.getProductId());
-        stmt.setString(2, inventory.getBatchNumber());
+    private void setInventoryParameters(PreparedStatement stmt, Inventory inventory, boolean isUpdate) throws SQLException {
+        int paramIndex = 1;
+
+        stmt.setInt(paramIndex++, inventory.getProductId());
+        stmt.setString(paramIndex++, inventory.getBatchNumber());
 
         if (inventory.getSupplierId() != null) {
-            stmt.setInt(3, inventory.getSupplierId());
+            stmt.setInt(paramIndex++, inventory.getSupplierId());
         } else {
-            stmt.setNull(3, Types.INTEGER);
+            stmt.setNull(paramIndex++, Types.INTEGER);
         }
 
-        stmt.setInt(4, inventory.getQuantityInStock());
-        stmt.setInt(5, inventory.getQuantityReserved());
+        stmt.setInt(paramIndex++, inventory.getQuantityInStock());
+        stmt.setInt(paramIndex++, inventory.getQuantityReserved());
 
         if (inventory.getManufacturingDate() != null) {
-            stmt.setDate(6, Date.valueOf(inventory.getManufacturingDate()));
+            stmt.setDate(paramIndex++, Date.valueOf(inventory.getManufacturingDate()));
         } else {
-            stmt.setNull(6, Types.DATE);
+            stmt.setNull(paramIndex++, Types.DATE);
         }
 
-        stmt.setDate(7, Date.valueOf(inventory.getExpiryDate()));
+        stmt.setDate(paramIndex++, Date.valueOf(inventory.getExpiryDate()));
 
         if (inventory.getPurchasePrice() != null) {
-            stmt.setDouble(8, inventory.getPurchasePrice());
+            stmt.setDouble(paramIndex++, inventory.getPurchasePrice());
         } else {
-            stmt.setNull(8, Types.DECIMAL);
+            stmt.setNull(paramIndex++, Types.DECIMAL);
+        }
+
+        // Vérification du sellingPrice
+        if (inventory.getSellingPrice() != null) {
+            stmt.setDouble(paramIndex++, inventory.getSellingPrice());
+        } else {
+            // Si sellingPrice est null, mettez-le à null
+            stmt.setNull(paramIndex++, Types.DECIMAL);
         }
 
         if (inventory.getReceivedDate() != null) {
-            stmt.setDate(9, Date.valueOf(inventory.getReceivedDate()));
+            stmt.setDate(paramIndex++, Date.valueOf(inventory.getReceivedDate()));
         } else {
-            stmt.setNull(9, Types.DATE);
+            stmt.setNull(paramIndex++, Types.DATE);
         }
 
-        stmt.setString(10, inventory.getLocation());
+        stmt.setString(paramIndex++, inventory.getLocation());
+
+        // Pour l'update, ajouter l'ID à la fin
+        if (isUpdate) {
+            stmt.setInt(paramIndex, inventory.getInventoryId());
+        }
     }
 
     private Inventory mapInventory(ResultSet rs) throws SQLException {
@@ -363,6 +387,10 @@ public class InventoryDAOImpl implements InventoryDAO {
         double purchasePrice = rs.getDouble("purchase_price");
         inventory.setPurchasePrice(rs.wasNull() ? null : purchasePrice);
 
+        // Récupération du sellingPrice
+        double sellingPrice = rs.getDouble("selling_price");
+        inventory.setSellingPrice(rs.wasNull() ? null : sellingPrice);
+
         Date receivedDate = rs.getDate("received_date");
         inventory.setReceivedDate(receivedDate != null ? receivedDate.toLocalDate() : null);
 
@@ -375,7 +403,9 @@ public class InventoryDAOImpl implements InventoryDAO {
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         inventory.setUpdatedAt(updatedAt != null ? updatedAt.toLocalDateTime() : null);
 
+        // Infos supplémentaires
         inventory.setProductName(rs.getString("product_name"));
+        inventory.setGenericName(rs.getString("generic_name"));
         inventory.setSupplierName(rs.getString("supplier_name"));
 
         return inventory;
@@ -384,7 +414,8 @@ public class InventoryDAOImpl implements InventoryDAO {
     private List<Inventory> findByQuery(String sql, Object... params) {
         List<Inventory> list = new ArrayList<>();
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }
@@ -396,13 +427,18 @@ public class InventoryDAOImpl implements InventoryDAO {
             }
         } catch (SQLException e) {
             handleSQLException("Erreur lors de l'exécution de la requête", e);
+            System.err.println("Requête SQL en erreur: " + sql);
+            for (int i = 0; i < params.length; i++) {
+                System.err.println("Paramètre " + (i+1) + ": " + params[i]);
+            }
         }
 
         return list;
     }
 
     private boolean updateStock(String sql, Object... params) {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }
@@ -417,7 +453,8 @@ public class InventoryDAOImpl implements InventoryDAO {
     }
 
     private int getStockSum(String sql, Object... params) {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }

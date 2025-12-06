@@ -113,8 +113,9 @@ public class SupplierDAO {
         
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            String pattern = "%" + searchTerm.toLowerCase() + "%";
+
+            String searchLower = searchTerm.toLowerCase();
+            String pattern = "%" + searchLower + "%";
             stmt.setString(1, pattern);
             stmt.setString(2, pattern);
             stmt.setString(3, "%" + searchTerm + "%");
@@ -261,7 +262,18 @@ public class SupplierDAO {
         supplier.setReorderLevel(rs.getInt("reorder_level"));
         supplier.setIsActive(rs.getBoolean("is_active"));
         supplier.setBarcode(rs.getString("barcode"));
-        
+
+        // Ajouter le mapping des dates si votre classe Supplier les a
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        if (createdAt != null) {
+            supplier.setCreatedAt(createdAt.toLocalDateTime());
+        }
+
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (updatedAt != null) {
+            supplier.setUpdatedAt(updatedAt.toLocalDateTime());
+        }
+
         return supplier;
     }
 }

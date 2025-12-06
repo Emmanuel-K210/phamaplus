@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
 <div class="container-fluid">
     <div class="row mb-4">
@@ -51,7 +52,10 @@
                                     <option value="">Sélectionner un produit</option>
                                     <c:forEach var="product" items="${products}">
                                         <option value="${product.productId}">
-                                                ${product.productName} - ${product.genericName}
+                                                ${product.productName} <c:if test="${not empty product.genericName}">- ${product.genericName}</c:if>
+                                            <c:if test="${not empty product.sellingPrice}">
+                                                (<fmt:formatNumber value="${product.sellingPrice}" pattern="#,##0"/> FCFA)
+                                            </c:if>
                                         </option>
                                     </c:forEach>
                                 </select>
@@ -71,9 +75,12 @@
                                 </label>
                                 <select class="form-select modern-input" id="supplierId" name="supplierId">
                                     <option value="">Sélectionner un fournisseur</option>
-                                    <option value="1">Fournisseur A</option>
-                                    <option value="2">Fournisseur B</option>
-                                    <option value="3">Fournisseur C</option>
+                                    <c:forEach var="supplier" items="${suppliers}">
+                                        <option value="${supplier.supplierId}">
+                                                ${supplier.supplierName}
+                                            <c:if test="${not empty supplier.phone}">(${supplier.phone})</c:if>
+                                        </option>
+                                    </c:forEach>
                                 </select>
                             </div>
 
@@ -114,12 +121,30 @@
 
                             <div class="col-md-6">
                                 <label for="purchasePrice" class="form-label">
-                                    <i class="bi bi-currency-euro me-1"></i>Prix d'Achat Unitaire
+                                    <i class="bi bi-cash-coin me-1"></i>Prix d'Achat Unitaire
                                 </label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
                                     <input type="number" class="form-control modern-input" id="purchasePrice"
-                                           name="purchasePrice" step="0.01" min="0" placeholder="0.00">
+                                           name="purchasePrice" step="100" min="0"
+                                           placeholder="0" oninput="calculateTotal()">
+                                    <span class="input-group-text">FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calcul automatique -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-secondary py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="bi bi-calculator me-2"></i>
+                                            <strong>Total d'achat estimé:</strong>
+                                        </div>
+                                        <div>
+                                            <span id="totalAmount" class="fw-bold fs-5 text-success">0 FCFA</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -152,12 +177,46 @@
                         </div>
                     </div>
 
+                    <!-- Informations Complémentaires -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-3 mb-3">
+                            <i class="bi bi-info-circle text-warning me-2"></i>
+                            Informations Complémentaires
+                        </h5>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="receivedDate" class="form-label">
+                                    <i class="bi bi-calendar-event me-1"></i>Date de Réception
+                                </label>
+                                <input type="date" class="form-control modern-input" id="receivedDate"
+                                       name="receivedDate" value="<%= new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()) %>">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-shield-check me-1"></i>Statut du Lot
+                                </label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                                    <label class="form-check-label" for="isActive">
+                                        Lot actif
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Résumé -->
                     <div class="alert alert-info d-flex align-items-center">
                         <i class="bi bi-info-circle fs-4 me-3"></i>
                         <div>
-                            <strong>Astuce:</strong> Assurez-vous que toutes les informations sont correctes
-                            avant d'enregistrer le lot. Une fois enregistré, vous pourrez toujours le modifier.
+                            <strong>Astuces:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Le numéro de lot doit être unique pour chaque produit</li>
+                                <li>Vérifiez attentivement la date d'expiration</li>
+                                <li>Le prix d'achat est utilisé pour calculer la marge bénéficiaire</li>
+                            </ul>
                         </div>
                     </div>
 
@@ -167,7 +226,7 @@
                            class="btn btn-outline-secondary px-4">
                             <i class="bi bi-x-circle me-2"></i>Annuler
                         </a>
-                        <button type="reset" class="btn btn-outline-warning px-4">
+                        <button type="reset" class="btn btn-outline-warning px-4" onclick="resetForm()">
                             <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
                         </button>
                         <button type="submit" class="btn btn-modern btn-gradient-success px-4">
@@ -181,15 +240,35 @@
 </div>
 
 <script>
+    // Format FCFA
+    function formatFCFA(amount) {
+        if (!amount || isNaN(amount)) return '0 FCFA';
+        return new Intl.NumberFormat('fr-FR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount) + ' FCFA';
+    }
+
+    // Calcul du total
+    function calculateTotal() {
+        const quantity = parseInt(document.getElementById('quantity').value) || 0;
+        const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
+        const total = quantity * price;
+        document.getElementById('totalAmount').textContent = formatFCFA(total);
+    }
+
+    // Ajustement quantité
     function adjustQuantity(value) {
         const input = document.getElementById('quantity');
         const currentValue = parseInt(input.value) || 0;
         const newValue = currentValue + value;
         if (newValue > 0) {
             input.value = newValue;
+            calculateTotal();
         }
     }
 
+    // Vérification expiration
     function checkExpiry() {
         const expiryDate = new Date(document.getElementById('expiryDate').value);
         const today = new Date();
@@ -201,18 +280,91 @@
         if (diffDays < 0) {
             alertDiv.innerHTML = '<i class="bi bi-x-circle text-danger me-1"></i>' +
                 '<strong class="text-danger">Attention: Ce produit est déjà expiré!</strong>';
+            alertDiv.className = 'alert alert-danger mt-2 py-2';
         } else if (diffDays < 30) {
             alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>' +
                 '<strong class="text-warning">Attention: Ce produit expire dans ' + diffDays + ' jours</strong>';
+            alertDiv.className = 'alert alert-warning mt-2 py-2';
         } else if (diffDays < 90) {
             alertDiv.innerHTML = '<i class="bi bi-info-circle text-info me-1"></i>' +
                 '<span class="text-info">Ce produit expire dans ' + diffDays + ' jours</span>';
+            alertDiv.className = 'alert alert-info mt-2 py-2';
         } else {
             alertDiv.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>' +
                 '<span class="text-success">Date d\'expiration valide (' + diffDays + ' jours)</span>';
+            alertDiv.className = 'alert alert-success mt-2 py-2';
         }
     }
 
-    // Set min date for expiry to today
-    document.getElementById('expiryDate').min = new Date().toISOString().split('T')[0];
+    // Réinitialisation
+    function resetForm() {
+        document.getElementById('totalAmount').textContent = '0 FCFA';
+        document.getElementById('expiryAlert').innerHTML = '';
+        document.getElementById('expiryAlert').className = '';
+    }
+
+    // Écouteurs d'événements
+    document.getElementById('quantity').addEventListener('input', calculateTotal);
+    document.getElementById('purchasePrice').addEventListener('input', calculateTotal);
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set min date for expiry to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('expiryDate').min = today;
+        document.getElementById('manufacturingDate').max = today;
+        document.getElementById('receivedDate').max = today;
+
+        // Calcul initial
+        calculateTotal();
+
+        // Focus sur le premier champ
+        document.getElementById('productId').focus();
+    });
+
+    // Auto-génération du numéro de lot
+    document.getElementById('productId').addEventListener('change', function() {
+        const productId = this.value;
+        if (productId) {
+            // Générer un numéro de lot basé sur la date + ID produit
+            const today = new Date();
+            const datePart = today.getFullYear().toString().slice(-2) +
+                String(today.getMonth() + 1).padStart(2, '0') +
+                String(today.getDate()).padStart(2, '0');
+            const batchNumber = 'BATCH' + datePart + '-' + String(productId).padStart(3, '0');
+
+            document.getElementById('batchNumber').value = batchNumber;
+        }
+    });
 </script>
+
+<style>
+    .modern-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .modern-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-gradient-success {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+    }
+
+    .btn-gradient-success:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4091 100%);
+        color: white;
+    }
+
+    .modern-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+    }
+</style>

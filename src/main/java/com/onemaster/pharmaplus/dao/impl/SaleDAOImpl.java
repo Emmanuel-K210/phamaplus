@@ -13,12 +13,7 @@ import java.util.List;
 
 public class SaleDAOImpl implements SaleDAO {
     
-    private Connection connection;
-    
-    public SaleDAOImpl() {
-        this.connection = DatabaseConnection.getConnection();
-    }
-    
+
     @Override
     public Integer insertSale(Sale sale) {
         String sql = "INSERT INTO sales (customer_id, prescription_id, sale_date, " +
@@ -26,7 +21,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "payment_method, payment_status, served_by, notes) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setSaleParameters(stmt, sale);
             
             int affectedRows = stmt.executeUpdate();
@@ -51,7 +47,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "total_amount = ?, payment_method = ?, payment_status = ?, " +
                      "served_by = ?, notes = ? WHERE sale_id = ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             setSaleParameters(stmt, sale);
             stmt.setInt(11, sale.getSaleId());
             
@@ -69,7 +66,8 @@ public class SaleDAOImpl implements SaleDAO {
         
         String sql = "DELETE FROM sales WHERE sale_id = ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -85,7 +83,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "WHERE s.sale_id = ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -108,7 +107,9 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "ORDER BY s.sale_date DESC";
         
-        try (Statement stmt = connection.createStatement();
+        try (
+                Connection connection = DatabaseConnection.getConnection();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
@@ -127,7 +128,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "quantity, unit_price, discount, line_total) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleItem.getSaleId());
             stmt.setInt(2, saleItem.getProductId());
             stmt.setInt(3, saleItem.getInventoryId());
@@ -152,7 +154,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN inventory i ON si.inventory_id = i.inventory_id " +
                      "WHERE si.sale_id = ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -171,7 +174,8 @@ public class SaleDAOImpl implements SaleDAO {
     public void deleteSaleItems(Integer saleId) {
         String sql = "DELETE FROM sale_items WHERE sale_id = ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -187,7 +191,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "WHERE s.customer_id = ? ORDER BY s.sale_date DESC";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, customerId);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -209,7 +214,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "WHERE DATE(s.sale_date) = ? ORDER BY s.sale_date DESC";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(date));
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -229,7 +235,8 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM sales " +
                      "WHERE DATE(sale_date) BETWEEN ? AND ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
             
@@ -252,7 +259,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "JOIN sale_items si ON s.sale_id = si.sale_id " +
                      "WHERE DATE(s.sale_date) BETWEEN ? AND ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
             
@@ -280,7 +288,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "ORDER BY total_quantity DESC " +
                      "LIMIT ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, limit);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -309,7 +318,8 @@ public class SaleDAOImpl implements SaleDAO {
     public Integer getTodayTransactions() {
         String sql = "SELECT COUNT(*) FROM sales WHERE DATE(sale_date) = CURRENT_DATE";
         
-        try (Statement stmt = connection.createStatement();
+        try (Connection connection = DatabaseConnection.getConnection();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             if (rs.next()) {
@@ -329,7 +339,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "ORDER BY s.sale_date DESC LIMIT ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, limit);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -431,7 +442,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
                      "ORDER BY s.sale_date DESC";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
             
@@ -453,7 +465,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "WHERE s.payment_method = ? ORDER BY s.sale_date DESC";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, paymentMethod);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -474,7 +487,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                      "WHERE s.prescription_id = ? ORDER BY s.sale_date DESC";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, prescriptionId);
             
             try (ResultSet rs = stmt.executeQuery()) {
@@ -493,7 +507,8 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT COUNT(*) FROM sales " +
                      "WHERE DATE(sale_date) BETWEEN ? AND ?";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
             
@@ -521,7 +536,8 @@ public class SaleDAOImpl implements SaleDAO {
                      "GROUP BY DATE(sale_date) " +
                      "ORDER BY sale_day";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
             

@@ -59,6 +59,50 @@ public class CustomerServlet extends HttpServlet {
         }
     }
 
+
+    private void createCustomerAjax(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            extractCustomer(request);
+            Customer customer = extractCustomer(request);
+            customer.setDateOfBirth(null); // Optionnel
+            customerService.addCustomer(customer);
+
+            // Réponse JSON de succès
+            String jsonResponse = String.format(
+                    "{\"success\": true, \"customerId\": %d, \"message\": \"Client créé avec succès\"}",
+                    customer.getCustomerId()
+            );
+
+            response.getWriter().write(jsonResponse);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            // Réponse JSON d'erreur
+            String jsonResponse = String.format(
+                    "{\"success\": false, \"message\": \"%s\"}",
+                    e.getMessage().replace("\"", "\\\"")
+            );
+
+            response.getWriter().write(jsonResponse);
+        }
+    }
+
+    private Customer extractCustomer(HttpServletRequest request) {
+        Customer customer = new Customer();
+        customer.setFirstName(request.getParameter("firstName"));
+        customer.setLastName(request.getParameter("lastName"));
+        customer.setPhone(request.getParameter("phone"));
+        customer.setEmail(request.getParameter("email"));
+        customer.setAddress(request.getParameter("address"));
+        return customer;
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -83,6 +127,8 @@ public class CustomerServlet extends HttpServlet {
                 case "/check-phone":
                     checkPhoneExists(request, response);
                     break;
+                case "/create":
+                    createCustomerAjax(request,response);
                 default:
                     listCustomers(request, response);
                     break;
@@ -541,14 +587,7 @@ public class CustomerServlet extends HttpServlet {
             throws ServletException, IOException {
 
         try {
-            Customer customer = new Customer();
-
-            // Récupérer les données du formulaire
-            customer.setFirstName(request.getParameter("firstName"));
-            customer.setLastName(request.getParameter("lastName"));
-            customer.setPhone(request.getParameter("phone"));
-            customer.setEmail(request.getParameter("email"));
-            customer.setAddress(request.getParameter("address"));
+            Customer customer = extractCustomer(request);
             customer.setAllergies(request.getParameter("allergies"));
 
             // Date de naissance

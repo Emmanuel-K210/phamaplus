@@ -91,9 +91,15 @@ public class Sale {
     
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
-    
+
+    public String getReference() {
+        if (saleId != null) {
+            return "SALE-" + saleId;
+        }
+        return null;
+    }
     @Override
     public String toString() {
-        return "Sale #" + saleId + " - " + totalAmount + "€";
+        return "Sale #" + saleId + " - " + totalAmount + "CFA";
     }
 }

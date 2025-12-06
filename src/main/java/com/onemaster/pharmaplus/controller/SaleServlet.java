@@ -11,9 +11,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,20 +142,6 @@ public class SaleServlet extends HttpServlet {
             throws ServletException, IOException {
 
         try {
-            // Créer l'objet Sale
-            Sale sale = new Sale();
-
-            // Client (peut être null pour vente sans client enregistré)
-            String customerIdStr = request.getParameter("customerId");
-            if (customerIdStr != null && !customerIdStr.isEmpty()) {
-                sale.setCustomerId(Integer.parseInt(customerIdStr));
-            }
-
-            // Méthode de paiement
-            sale.setPaymentMethod(request.getParameter("paymentMethod"));
-            sale.setServedBy(request.getParameter("servedBy") != null ?
-                    request.getParameter("servedBy") : "System");
-
             // Récupérer les items du panier
             String[] productIds = request.getParameterValues("productId[]");
             String[] quantities = request.getParameterValues("quantity[]");
@@ -162,7 +151,9 @@ public class SaleServlet extends HttpServlet {
                 throw new IllegalArgumentException("Le panier est vide");
             }
 
+            // Créer les items et calculer les totaux
             List<SaleItem> items = new ArrayList<>();
+            double subtotal = 0.0;
 
             for (int i = 0; i < productIds.length; i++) {
                 Integer productId = Integer.parseInt(productIds[i]);
@@ -172,25 +163,110 @@ public class SaleServlet extends HttpServlet {
                 // Trouver le meilleur lot pour ce produit
                 Inventory bestBatch = inventoryService.findBestBatchForProduct(productId, quantity);
                 if (bestBatch == null) {
-                    throw new IllegalArgumentException("Stock insuffisant pour le produit ID: " + productId);
+                    Product product = productService.getProductById(productId);
+                    String productName = product != null ? product.getProductName() : "ID: " + productId;
+                    throw new IllegalArgumentException("Stock insuffisant pour le produit: " + productName);
                 }
+
+                double lineTotal = quantity * price;
+                subtotal += lineTotal;
 
                 SaleItem item = new SaleItem();
                 item.setProductId(productId);
                 item.setInventoryId(bestBatch.getInventoryId());
                 item.setQuantity(quantity);
                 item.setUnitPrice(price);
-                item.setLineTotal(quantity * price);
+                item.setDiscount(0.0);
+                item.setLineTotal(lineTotal);
 
                 items.add(item);
             }
 
+            // Créer l'objet Sale avec tous les calculs
+            Sale sale = new Sale();
+
+            // Client (peut être null pour vente sans client)
+            String customerIdStr = request.getParameter("customerId");
+            if (customerIdStr != null && !customerIdStr.isEmpty()) {
+                try {
+                    sale.setCustomerId(Integer.parseInt(customerIdStr));
+                } catch (NumberFormatException e) {
+                    // Ignorer si l'ID client n'est pas valide
+                    sale.setCustomerId(null);
+                }
+            }
+
+            // Calculs financiers
+            String discountStr = request.getParameter("discount");
+            double discountAmount = 0.0;
+            if (discountStr != null && !discountStr.isEmpty()) {
+                try {
+                    discountAmount = Double.parseDouble(discountStr);
+                    if (discountAmount < 0) discountAmount = 0.0;
+                } catch (NumberFormatException e) {
+                    discountAmount = 0.0;
+                }
+            }
+
+            double taxAmount = 0.0; // Pas de taxe pour le moment
+            double totalAmount = subtotal - discountAmount + taxAmount;
+
+            // Vérifier que le total est positif
+            if (totalAmount <= 0) {
+                throw new IllegalArgumentException("Le montant total doit être positif. Vérifiez la remise.");
+            }
+
+            sale.setSubtotal(subtotal);
+            sale.setDiscountAmount(discountAmount);
+            sale.setTaxAmount(taxAmount);
+            sale.setTotalAmount(totalAmount);
+
+            // Date de vente
+            sale.setSaleDate(LocalDateTime.now());
+
+            // Méthode de paiement
+            String paymentMethod = request.getParameter("paymentMethod");
+            sale.setPaymentMethod(paymentMethod != null ? paymentMethod : "cash");
+            sale.setPaymentStatus("paid");
+
+            // Servi par
+            String servedBy = request.getParameter("servedBy");
+            if (servedBy == null || servedBy.trim().isEmpty()) {
+                HttpSession session = request.getSession(false);
+                String username = (String) session.getAttribute("username");
+                sale.setServedBy(username);
+            }
+
+
+            // Notes
+            String notes = request.getParameter("notes");
+            sale.setNotes(notes);
+
             // Créer la vente
             Integer saleId = saleService.createSale(sale, items);
 
-            // Rediriger vers le reçu
-            response.sendRedirect(request.getContextPath() + "/sales/view?id=" + saleId + "&success=true");
+            if (saleId != null) {
+                // Vérifier si on doit imprimer le reçu
+                String printReceipt = request.getParameter("printReceipt");
+                String redirectUrl = request.getContextPath() + "/sales/view?id=" + saleId + "&success=true";
 
+                if ("on".equals(printReceipt)) {
+                    redirectUrl += "&print=true";
+                }
+
+                response.sendRedirect(redirectUrl);
+            } else {
+                throw new Exception("Échec de la création de la vente");
+            }
+
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("error", "Erreur de format des données: " + e.getMessage());
+            showNewSaleForm(request, response);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            request.setAttribute("error", e.getMessage());
+            showNewSaleForm(request, response);
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Erreur lors de la création de la vente: " + e.getMessage());
@@ -244,7 +320,6 @@ public class SaleServlet extends HttpServlet {
         List<Object[]> topProducts = saleService.getTopProducts(10);
 
         // Préparer les données pour les graphiques
-        // TODO: Implémenter la génération des données JSON pour les graphiques
 
         request.setAttribute("sales", sales);
         request.setAttribute("startDate", startDate);

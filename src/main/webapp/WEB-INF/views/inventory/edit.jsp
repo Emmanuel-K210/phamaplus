@@ -1,11 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.time.LocalDate" %>
 
 <%
-    // Pour les dates par défaut
     java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.format.DateTimeFormatter htmlDateFormatter =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     pageContext.setAttribute("today", today);
+    pageContext.setAttribute("htmlDateFormatter", htmlDateFormatter);
 %>
 
 <div class="container-fluid">
@@ -82,15 +87,11 @@
                                     <c:forEach var="product" items="${products}">
                                         <option value="${product.productId}"
                                             ${inventory.productId == product.productId ? 'selected' : ''}
-                                                data-price="${product.purchasePrice}"
-                                                data-category="${product.category}"
-                                                data-code="${product.code}">
+                                                data-price="${product.unitPrice}"
+                                                data-selling="${product.sellingPrice}">
                                                 ${product.productName}
                                             <c:if test="${not empty product.genericName}">
                                                 - ${product.genericName}
-                                            </c:if>
-                                            <c:if test="${product.stockQuantity <= 10}">
-                                                (Stock faible: ${product.stockQuantity})
                                             </c:if>
                                         </option>
                                     </c:forEach>
@@ -155,21 +156,13 @@
                                         <i class="bi bi-123 me-1"></i>Quantité en Stock <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-10)">
-                                            -10
-                                        </button>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)">
-                                            <i class="bi bi-dash"></i>
-                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-10)">-10</button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(-1)"><i class="bi bi-dash"></i></button>
                                         <input type="number" class="form-control modern-input text-center"
                                                id="quantity" name="quantity" min="0" max="9999"
                                                value="${inventory.quantityInStock}" required>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(10)">
-                                            +10
-                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(1)"><i class="bi bi-plus"></i></button>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="adjustQuantity(10)">+10</button>
                                         <span class="input-group-text">unités</span>
                                     </div>
                                 </div>
@@ -179,8 +172,8 @@
                                         <i class="bi bi-lock me-1"></i>Quantité Réservée
                                     </label>
                                     <input type="number" class="form-control modern-input" id="quantityReserved"
-                                           name="quantityReserved" min="0" max="${inventory.quantityInStock}"
-                                           value="${inventory.quantityReserved}">
+                                           name="quantityReserved" min="0"
+                                           value="${inventory.quantityReserved != null ? inventory.quantityReserved : 0}">
                                 </div>
                             </div>
 
@@ -190,11 +183,10 @@
                                         <i class="bi bi-cash me-1"></i>Prix d'Achat Unitaire
                                     </label>
                                     <div class="input-group">
-                                        <span class="input-group-text">FCFA</span>
                                         <input type="number" class="form-control modern-input" id="purchasePrice"
                                                name="purchasePrice" step="1" min="0"
-                                               value="<fmt:formatNumber value='${inventory.purchasePrice}' pattern='#' />"
-                                               onchange="calculateTotalValue()">
+                                               value="${inventory.purchasePrice != null ? inventory.purchasePrice : 0}">
+                                        <span class="input-group-text">FCFA</span>
                                     </div>
                                 </div>
 
@@ -203,17 +195,19 @@
                                         <i class="bi bi-tag me-1"></i>Prix de Vente Unitaire
                                     </label>
                                     <div class="input-group">
-                                        <span class="input-group-text">FCFA</span>
                                         <input type="number" class="form-control modern-input" id="sellingPrice"
                                                name="sellingPrice" step="1" min="0"
-                                               value="<fmt:formatNumber value='${inventory.sellingPrice}' pattern='#' />">
+                                               value="${inventory.sellingPrice != null ? inventory.sellingPrice : 0}">
+                                        <span class="input-group-text">FCFA</span>
                                     </div>
                                 </div>
 
                                 <div class="alert alert-info p-2">
                                     <div class="d-flex justify-content-between">
                                         <small>Valeur totale du stock:</small>
-                                        <strong id="totalValue">0 FCFA</strong>
+                                        <strong id="totalValue">
+                                            <fmt:formatNumber value="${inventory.quantityInStock * (inventory.purchasePrice != null ? inventory.purchasePrice : 0)}" pattern="#,##0"/> FCFA
+                                        </strong>
                                     </div>
                                 </div>
                             </div>
@@ -233,7 +227,7 @@
                                     </label>
                                     <input type="date" class="form-control modern-input" id="manufacturingDate"
                                            name="manufacturingDate"
-                                           value="${inventory.manufacturingDate}"
+                                           value="<c:if test="${not empty inventory.manufacturingDate}">${inventory.manufacturingDate.format(htmlDateFormatter)}</c:if>"
                                            max="${today}">
                                 </div>
 
@@ -243,7 +237,7 @@
                                     </label>
                                     <input type="date" class="form-control modern-input" id="receivedDate"
                                            name="receivedDate"
-                                           value="${inventory.receivedDate}"
+                                           value="<c:if test="${not empty inventory.receivedDate}">${inventory.receivedDate.format(htmlDateFormatter)}</c:if>"
                                            max="${today}">
                                 </div>
                             </div>
@@ -255,7 +249,7 @@
                                     </label>
                                     <input type="date" class="form-control modern-input" id="expiryDate"
                                            name="expiryDate" required
-                                           value="${inventory.expiryDate}"
+                                           value="<c:if test="${not empty inventory.expiryDate}">${inventory.expiryDate.format(htmlDateFormatter)}</c:if>"
                                            min="${today}">
                                     <div class="mt-2">
                                         <small class="text-muted" id="expiryWarning"></small>
@@ -270,76 +264,14 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <h5 class="border-bottom pb-3 mb-3">
-                            <i class="bi bi-card-text text-secondary me-2"></i>Informations Complémentaires
-                        </h5>
 
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="notes" class="form-label">
-                                    <i class="bi bi-journal-text me-1"></i>Notes
-                                </label>
-                                <textarea class="form-control modern-input" id="notes" name="notes"
-                                          rows="3" placeholder="Notes supplémentaires...">${inventory.notes}</textarea>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">
-                                    <i class="bi bi-toggle-on me-1"></i>Statut
-                                </label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive"
-                                    ${inventory.isActive ? 'checked' : ''}>
-                                    <label class="form-check-label" for="isActive">
-                                        <c:choose>
-                                            <c:when test="${inventory.isActive}">
-                                                <span class="text-success">Actif</span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <span class="text-danger">Inactif</span>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="minimumStock" class="form-label">
-                                    <i class="bi bi-graph-down me-1"></i>Stock Minimum d'Alerte
-                                </label>
-                                <input type="number" class="form-control modern-input" id="minimumStock"
-                                       name="minimumStock" min="0" value="${inventory.minimumStock}">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-3 justify-content-between align-items-center pt-4 border-top">
-                        <div>
-                            <span class="text-muted">
-                                <i class="bi bi-clock-history me-1"></i>
-                                <c:if test="${not empty inventory.createdAt}">
-                                    Créé le: <fmt:formatDate value="${inventory.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
-                                </c:if>
-                                <c:if test="${not empty inventory.updatedAt}">
-                                    | Modifié le: <fmt:formatDate value="${inventory.updatedAt}" pattern="dd/MM/yyyy HH:mm"/>
-                                </c:if>
-                            </span>
-                        </div>
-
-                        <div class="d-flex gap-3">
-                            <a href="${pageContext.request.contextPath}/inventory"
-                               class="btn btn-outline-secondary px-4">
-                                <i class="bi bi-x-circle me-2"></i>Annuler
-                            </a>
-                            <button type="button" class="btn btn-modern btn-gradient-warning px-4"
-                                    onclick="saveAsDraft()">
-                                <i class="bi bi-save me-2"></i>Enregistrer brouillon
-                            </button>
-                            <button type="submit" class="btn btn-modern btn-gradient-primary px-4">
-                                <i class="bi bi-check-circle me-2"></i>Mettre à Jour
-                            </button>
-                        </div>
+                    <div class="d-flex gap-3 justify-content-end pt-4 border-top">
+                        <a href="${pageContext.request.contextPath}/inventory" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-modern btn-gradient-primary px-4">
+                            <i class="bi bi-check-circle me-2"></i>Mettre à Jour
+                        </button>
                     </div>
                 </form>
             </div>
@@ -358,10 +290,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir supprimer le lot <strong>${inventory.batchNumber}</strong> ?</p>
+                <p>Êtes-vous sûr de vouloir supprimer le lot <strong>${inventory.batchNumber}</strong>?</p>
                 <p class="text-danger">
                     <i class="bi bi-exclamation-circle me-1"></i>
-                    Cette action est irréversible et supprimera toutes les données associées à ce lot.
+                    Cette action est irréversible.
                 </p>
                 <div class="form-check mt-3">
                     <input class="form-check-input" type="checkbox" id="confirmDelete">
@@ -382,265 +314,353 @@
     </div>
 </div>
 
-<script>
-    // Fonction pour formater les montants en FCFA
-    function formatFCFA(amount) {
-        if (!amount || isNaN(amount) || amount === '') return '0 FCFA';
-
-        const numAmount = parseFloat(amount);
-        if (isNaN(numAmount)) return '0 FCFA';
-
-        // Formater avec séparateurs de milliers, sans décimales
-        return new Intl.NumberFormat('fr-FR', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(numAmount) + ' FCFA';
-    }
-
-    // Initialisation
-    document.addEventListener('DOMContentLoaded', function() {
-        calculateTotalValue();
-        checkExpiryDate();
-        setupFormValidation();
-        updateProductInfo(document.getElementById('productId').value);
-    });
-
-    function adjustQuantity(value) {
-        const input = document.getElementById('quantity');
-        let currentValue = parseInt(input.value) || 0;
-        let newValue = currentValue + value;
-
-        if (newValue < 0) newValue = 0;
-        if (newValue > 9999) newValue = 9999;
-
-        input.value = newValue;
-        calculateTotalValue();
-        updateReservedMax();
-    }
-
-    function updateReservedMax() {
-        const quantity = document.getElementById('quantity').value;
-        const reserved = document.getElementById('quantityReserved');
-        reserved.max = quantity;
-
-        if (parseInt(reserved.value) > parseInt(quantity)) {
-            reserved.value = quantity;
-        }
-    }
-
-    function calculateTotalValue() {
-        const quantity = document.getElementById('quantity').value;
-        const price = document.getElementById('purchasePrice').value;
-        const totalValue = (quantity * price);
-
-        // Formater en FCFA
-        document.getElementById('totalValue').textContent = formatFCFA(totalValue);
-    }
-
-    function generateBatchNumber() {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-
-        const batchNumber = `LOT${year}${month}${day}${random}`;
-        document.getElementById('batchNumber').value = batchNumber;
-    }
-
-    function checkExpiryDate() {
-        const expiryDate = document.getElementById('expiryDate').value;
-        if (!expiryDate) return;
-
-        const today = new Date();
-        const expiry = new Date(expiryDate);
-        const diffTime = expiry - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        const warningElement = document.getElementById('expiryWarning');
-        const alertElement = document.getElementById('expiryAlert');
-        const messageElement = document.getElementById('expiryMessage');
-
-        if (diffDays < 0) {
-            warningElement.innerHTML = '<i class="bi bi-x-circle text-danger me-1"></i>Produit expiré';
-            messageElement.innerHTML = 'Ce produit est déjà expiré. Il doit être retiré de la vente.';
-            alertElement.style.display = 'block';
-            alertElement.className = 'alert alert-danger p-3';
-        } else if (diffDays <= 30) {
-            warningElement.innerHTML = `<i class="bi bi-exclamation-triangle text-warning me-1"></i>Expire dans ${diffDays} jours`;
-            messageElement.innerHTML = `Ce produit expire dans ${diffDays} jours. Pensez à le vendre en priorité.`;
-            alertElement.style.display = 'block';
-            alertElement.className = 'alert alert-warning p-3';
-        } else if (diffDays <= 90) {
-            warningElement.innerHTML = `<i class="bi bi-info-circle text-info me-1"></i>Expire dans ${diffDays} jours`;
-            alertElement.style.display = 'none';
-        } else {
-            warningElement.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>Valide (${diffDays} jours restants)`;
-            alertElement.style.display = 'none';
-        }
-    }
-
-    function updateProductInfo(productId) {
-        const select = document.getElementById('productId');
-        const option = select.selectedOptions[0];
-        const price = option.getAttribute('data-price');
-        const category = option.getAttribute('data-category');
-        const code = option.getAttribute('data-code');
-
-        let info = '';
-        if (code) {
-            info += `<span class="badge bg-secondary me-2">${code}</span>`;
-        }
-        if (category) {
-            info += `<span class="badge bg-info me-2">${category}</span>`;
-        }
-        if (price) {
-            // Formater le prix en FCFA
-            const formattedPrice = formatFCFA(price);
-            info += `<br><small class="text-muted">Prix suggéré: ${formattedPrice}</small>`;
-        }
-
-        document.getElementById('productInfo').innerHTML = info;
-
-        // Mettre à jour le prix d'achat si vide
-        if (price && !document.getElementById('purchasePrice').value) {
-            document.getElementById('purchasePrice').value = parseFloat(price).toFixed(0);
-            calculateTotalValue();
-        }
-    }
-
-    function setupFormValidation() {
-        const form = document.getElementById('editForm');
-
-        form.addEventListener('submit', function(event) {
-            const quantity = document.getElementById('quantity').value;
-            const expiryDate = document.getElementById('expiryDate').value;
-            const batchNumber = document.getElementById('batchNumber').value;
-            const purchasePrice = document.getElementById('purchasePrice').value;
-
-            // Validation quantité
-            if (!quantity || quantity < 0) {
-                alert('La quantité doit être un nombre positif');
-                event.preventDefault();
-                return;
-            }
-
-            // Validation date d'expiration
-            if (!expiryDate) {
-                alert('La date d\'expiration est obligatoire');
-                event.preventDefault();
-                return;
-            }
-
-            // Validation numéro de lot
-            if (!batchNumber) {
-                alert('Le numéro de lot est obligatoire');
-                event.preventDefault();
-                return;
-            }
-
-            // Validation prix d'achat (si renseigné)
-            if (purchasePrice && purchasePrice < 0) {
-                alert('Le prix d\'achat ne peut pas être négatif');
-                event.preventDefault();
-                return;
-            }
-
-            // Vérifier que la date d'expiration est future
-            const today = new Date();
-            const expiry = new Date(expiryDate);
-            if (expiry < today) {
-                if (!confirm('La date d\'expiration est passée. Souhaitez-vous quand même continuer ?')) {
-                    event.preventDefault();
-                    return;
-                }
-            }
-
-            // Afficher un indicateur de chargement
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>Enregistrement...';
-            submitBtn.disabled = true;
-        });
-    }
-
-    function saveAsDraft() {
-        // Ajouter un champ caché pour indiquer qu'il s'agit d'un brouillon
-        const draftInput = document.createElement('input');
-        draftInput.type = 'hidden';
-        draftInput.name = 'isDraft';
-        draftInput.value = 'true';
-        document.getElementById('editForm').appendChild(draftInput);
-
-        // Soumettre le formulaire
-        document.getElementById('editForm').submit();
-    }
-
-    function confirmDelete() {
-        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        modal.show();
-
-        // Activer/désactiver le bouton de suppression
-        const confirmCheckbox = document.getElementById('confirmDelete');
-        const deleteBtn = document.getElementById('deleteBtn');
-
-        confirmCheckbox.addEventListener('change', function() {
-            deleteBtn.disabled = !this.checked;
-        });
-    }
-
-    function deleteInventory() {
-        window.location.href = '${pageContext.request.contextPath}/inventory/delete?id=${inventory.inventoryId}';
-    }
-
-    // Mettre à jour la vérification de date d'expiration
-    document.getElementById('expiryDate').addEventListener('change', checkExpiryDate);
-    document.getElementById('quantity').addEventListener('input', function() {
-        calculateTotalValue();
-        updateReservedMax();
-    });
-    document.getElementById('purchasePrice').addEventListener('input', calculateTotalValue);
-    document.getElementById('productId').addEventListener('change', function() {
-        updateProductInfo(this.value);
-    });
-</script>
-
 <style>
-    .spin {
-        animation: spin 1s linear infinite;
+    .modern-card {
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
     }
 
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+    .modern-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+
+    .modern-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-modern {
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+
+    .btn-gradient-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(102, 126, 234, 0.3);
     }
 
     .form-check-input:checked {
         background-color: #198754;
         border-color: #198754;
     }
-
-    .modern-input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-    }
-
-    .alert-warning {
-        background-color: rgba(255, 193, 7, 0.1);
-        border-color: rgba(255, 193, 7, 0.3);
-    }
-
-    .alert-danger {
-        background-color: rgba(220, 53, 69, 0.1);
-        border-color: rgba(220, 53, 69, 0.3);
-    }
-
-    .input-group-text {
-        background-color: #f8f9fa;
-        border-color: #dee2e6;
-    }
-
-    .badge {
-        font-size: 0.75em;
-        padding: 0.35em 0.65em;
-    }
 </style>
+
+
+<script>
+    (function() {
+        'use strict';
+
+        let deleteModal = null;
+
+        // ============================================
+        // FONCTIONS UTILITAIRES
+        // ============================================
+
+        function formatFCFA(amount) {
+            if (amount === null || amount === undefined || amount === '' || isNaN(amount)) {
+                return '0 FCFA';
+            }
+            const numAmount = parseFloat(amount);
+            if (isNaN(numAmount)) return '0 FCFA';
+            return new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(numAmount) + ' FCFA';
+        }
+
+        // ============================================
+        // FONCTIONS BUSINESS
+        // ============================================
+
+        function adjustQuantity(value) {
+            const input = document.getElementById('quantity');
+            if (!input) return;
+
+            let currentValue = parseInt(input.value) || 0;
+            let newValue = currentValue + value;
+
+            if (newValue < 0) newValue = 0;
+            if (newValue > 9999) newValue = 9999;
+
+            input.value = newValue;
+            calculateTotalValue();
+            updateReservedMax();
+        }
+
+        function updateReservedMax() {
+            const quantity = document.getElementById('quantity');
+            const reserved = document.getElementById('quantityReserved');
+
+            if (!quantity || !reserved) return;
+
+            const qty = parseInt(quantity.value) || 0;
+            reserved.max = qty;
+
+            if (parseInt(reserved.value) > qty) {
+                reserved.value = qty;
+            }
+        }
+
+        function calculateTotalValue() {
+            const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
+            const price = parseFloat(document.getElementById('purchasePrice')?.value) || 0;
+            const totalValue = quantity * price;
+            const totalElement = document.getElementById('totalValue');
+            if (totalElement) {
+                totalElement.textContent = formatFCFA(totalValue);
+            }
+        }
+
+        function generateBatchNumber() {
+            const input = document.getElementById('batchNumber');
+            if (!input) return;
+
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const batchNumber = `LOT${year}${month}${day}${random}`;
+            input.value = batchNumber;
+        }
+
+        function checkExpiryDate() {
+            const expiryDateInput = document.getElementById('expiryDate');
+            if (!expiryDateInput || !expiryDateInput.value) return;
+
+            const expiryDate = expiryDateInput.value;
+            const today = new Date();
+            const expiry = new Date(expiryDate);
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            const warningElement = document.getElementById('expiryWarning');
+            const alertElement = document.getElementById('expiryAlert');
+            const messageElement = document.getElementById('expiryMessage');
+
+            if (!warningElement || !alertElement || !messageElement) return;
+
+            if (diffDays < 0) {
+                warningElement.innerHTML = '<i class="bi bi-x-circle text-danger me-1"></i>Produit expiré';
+                messageElement.innerHTML = 'Ce produit est déjà expiré. Il doit être retiré de la vente.';
+                alertElement.style.display = 'block';
+                alertElement.className = 'alert alert-danger p-3';
+            } else if (diffDays <= 30) {
+                warningElement.innerHTML = `<i class="bi bi-exclamation-triangle text-warning me-1"></i>Expire dans ${diffDays} jours`;
+                messageElement.innerHTML = `Ce produit expire dans ${diffDays} jours. Pensez à le vendre en priorité.`;
+                alertElement.style.display = 'block';
+                alertElement.className = 'alert alert-warning p-3';
+            } else if (diffDays <= 90) {
+                warningElement.innerHTML = `<i class="bi bi-info-circle text-info me-1"></i>Expire dans ${diffDays} jours`;
+                alertElement.style.display = 'none';
+            } else {
+                warningElement.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>Valide (${diffDays} jours restants)`;
+                alertElement.style.display = 'none';
+            }
+        }
+
+        function updateProductInfo(productId) {
+            const select = document.getElementById('productId');
+            if (!select) return;
+
+            const option = select.selectedOptions[0];
+            if (!option) return;
+
+            const price = option.getAttribute('data-price');
+            const sellingPrice = option.getAttribute('data-selling');
+
+            let info = '';
+            if (price) {
+                info += `<small class="text-muted">Prix d'achat suggéré: ${formatFCFA(price)}</small>`;
+            }
+            if (sellingPrice) {
+                if (info) info += '<br>';
+                info += `<small class="text-muted">Prix de vente suggéré: ${formatFCFA(sellingPrice)}</small>`;
+            }
+
+            const productInfoElement = document.getElementById('productInfo');
+            if (productInfoElement) {
+                productInfoElement.innerHTML = info;
+            }
+
+            const purchasePriceInput = document.getElementById('purchasePrice');
+            if (purchasePriceInput && price && (!purchasePriceInput.value || purchasePriceInput.value === '0')) {
+                purchasePriceInput.value = parseFloat(price);
+                calculateTotalValue();
+            }
+
+            const sellingPriceInput = document.getElementById('sellingPrice');
+            if (sellingPriceInput && sellingPrice && (!sellingPriceInput.value || sellingPriceInput.value === '0')) {
+                sellingPriceInput.value = parseFloat(sellingPrice);
+            }
+        }
+
+        function confirmDelete() {
+            const modalElement = document.getElementById('deleteModal');
+            if (!modalElement) return;
+
+            if (typeof bootstrap !== 'undefined' && deleteModal) {
+                deleteModal.show();
+            }
+
+            const confirmCheckbox = document.getElementById('confirmDelete');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            if (confirmCheckbox && deleteBtn) {
+                confirmCheckbox.onchange = function() {
+                    deleteBtn.disabled = !this.checked;
+                };
+            }
+        }
+
+        function deleteInventory() {
+            window.location.href = '${pageContext.request.contextPath}/inventory/delete?id=${inventory.inventoryId}';
+        }
+
+        // ============================================
+        // VALIDATION FORMULAIRE
+        // ============================================
+
+        function setupFormValidation() {
+            const form = document.getElementById('editForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function(event) {
+                const quantity = document.getElementById('quantity')?.value;
+                const expiryDate = document.getElementById('expiryDate')?.value;
+                const batchNumber = document.getElementById('batchNumber')?.value;
+
+                if (!quantity || quantity < 0) {
+                    alert('La quantité doit être un nombre positif');
+                    event.preventDefault();
+                    return;
+                }
+
+                if (!expiryDate) {
+                    alert('La date d\'expiration est obligatoire');
+                    event.preventDefault();
+                    return;
+                }
+
+                if (!batchNumber) {
+                    alert('Le numéro de lot est obligatoire');
+                    event.preventDefault();
+                    return;
+                }
+
+                const today = new Date();
+                const expiry = new Date(expiryDate);
+                if (expiry < today) {
+                    if (!confirm('La date d\'expiration est passée. Souhaitez-vous quand même continuer?')) {
+                        event.preventDefault();
+                        return;
+                    }
+                }
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enregistrement...';
+                    submitBtn.disabled = true;
+                }
+            });
+        }
+
+        // ============================================
+        // ÉCOUTEURS D'ÉVÉNEMENTS
+        // ============================================
+
+        function setupEventListeners() {
+            const expiryDateInput = document.getElementById('expiryDate');
+            const quantityInput = document.getElementById('quantity');
+            const purchasePriceInput = document.getElementById('purchasePrice');
+            const productSelect = document.getElementById('productId');
+
+            if (expiryDateInput) {
+                expiryDateInput.addEventListener('change', checkExpiryDate);
+            }
+
+            if (quantityInput) {
+                quantityInput.addEventListener('input', function() {
+                    calculateTotalValue();
+                    updateReservedMax();
+                });
+            }
+
+            if (purchasePriceInput) {
+                purchasePriceInput.addEventListener('input', calculateTotalValue);
+            }
+
+            if (productSelect) {
+                productSelect.addEventListener('change', function() {
+                    updateProductInfo(this.value);
+                });
+            }
+        }
+
+        // ============================================
+        // NETTOYAGE
+        // ============================================
+
+        function cleanup() {
+            if (deleteModal && deleteModal._isShown) {
+                deleteModal.hide();
+            }
+        }
+
+        // ============================================
+        // INITIALISATION
+        // ============================================
+
+        function initialize() {
+            cleanup();
+
+            // Initialiser la modal
+            const modalElement = document.getElementById('deleteModal');
+            if (modalElement && typeof bootstrap !== 'undefined') {
+                deleteModal = new bootstrap.Modal(modalElement);
+            }
+
+            // Initialiser les valeurs
+            calculateTotalValue();
+            checkExpiryDate();
+            setupFormValidation();
+
+            const productSelect = document.getElementById('productId');
+            if (productSelect) {
+                updateProductInfo(productSelect.value);
+            }
+
+            updateReservedMax();
+            setupEventListeners();
+        }
+
+        // Exposer les fonctions nécessaires globalement
+        window.adjustQuantity = adjustQuantity;
+        window.generateBatchNumber = generateBatchNumber;
+        window.confirmDelete = confirmDelete;
+        window.deleteInventory = deleteInventory;
+        window.updateProductInfo = updateProductInfo;
+
+        // Initialiser
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
+
+        // Nettoyer au déchargement
+        window.addEventListener('beforeunload', cleanup);
+        window.addEventListener('pagehide', cleanup);
+
+    })();
+</script>

@@ -5,40 +5,62 @@
          https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
-    <display-name>PharmaPlus Pharmacy Management</display-name>
+    <display-name>PharmaPlus</display-name>
+
+    <!-- Configuration MIME Types - ESSENTIELLE -->
+    <mime-mapping>
+        <extension>css</extension>
+        <mime-type>text/css</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>js</extension>
+        <mime-type>application/javascript</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>png</extension>
+        <mime-type>image/png</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>jpg</extension>
+        <mime-type>image/jpeg</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>gif</extension>
+        <mime-type>image/gif</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>ico</extension>
+        <mime-type>image/x-icon</mime-type>
+    </mime-mapping>
 
     <!-- Filtre d'authentification -->
     <filter>
         <filter-name>AuthenticationFilter</filter-name>
         <filter-class>com.onemaster.pharmaplus.filter.AuthenticationFilter</filter-class>
     </filter>
+
     <filter-mapping>
         <filter-name>AuthenticationFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
-    <!-- Filtre d'encodage -->
+    <!-- Filtre pour les ressources statiques (Optionnel) -->
     <filter>
-        <filter-name>CharacterEncodingFilter</filter-name>
-        <filter-class>com.onemaster.pharmaplus.filter.CharacterEncodingFilter</filter-class>
-        <init-param>
-            <param-name>encoding</param-name>
-            <param-value>UTF-8</param-value>
-        </init-param>
+        <filter-name>StaticResourceFilter</filter-name>
+        <filter-class>com.onemaster.pharmaplus.filter.StaticResourceFilter</filter-class>
     </filter>
+
     <filter-mapping>
-        <filter-name>CharacterEncodingFilter</filter-name>
-        <url-pattern>/*</url-pattern>
+        <filter-name>StaticResourceFilter</filter-name>
+        <url-pattern>/assets/*</url-pattern>
+        <url-pattern>*.css</url-pattern>
+        <url-pattern>*.js</url-pattern>
     </filter-mapping>
 
     <!-- Pages d'erreur -->
     <error-page>
         <error-code>404</error-code>
         <location>/WEB-INF/views/errors/404.jsp</location>
-    </error-page>
-    <error-page>
-        <error-code>404</error-code>
-        <location>/WEB-INF/views/errors/405.jsp</location>
     </error-page>
     <error-page>
         <error-code>500</error-code>
@@ -48,6 +70,7 @@
     <!-- Page d'accueil -->
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
+        <welcome-file>login.jsp</welcome-file>
     </welcome-file-list>
 
     <!-- Configuration de session -->
@@ -57,7 +80,6 @@
             <http-only>true</http-only>
             <secure>false</secure>
         </cookie-config>
-        <tracking-mode>COOKIE</tracking-mode>
     </session-config>
 
 </web-app>

@@ -11,11 +11,13 @@ public class Inventory {
     private Integer quantityInStock = 0;
     private Integer quantityReserved = 0;
     private LocalDate manufacturingDate;
+    private String genericName;
     private LocalDate expiryDate;
     private Double purchasePrice;
     private LocalDate receivedDate = LocalDate.now();
     private String location;
     private Boolean isExpired;
+    private Double sellingPrice;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -45,7 +47,11 @@ public class Inventory {
     
     public Integer getSupplierId() { return supplierId; }
     public void setSupplierId(Integer supplierId) { this.supplierId = supplierId; }
-    
+
+    public String getGenericName(){return this.genericName;}
+    public void setGenericName(String genericName){this.genericName = genericName;}
+
+
     public Integer getQuantityInStock() { return quantityInStock; }
     public void setQuantityInStock(Integer quantityInStock) { this.quantityInStock = quantityInStock; }
     
@@ -86,7 +92,9 @@ public class Inventory {
     public Integer getAvailableQuantity() {
         return quantityInStock - quantityReserved;
     }
-    
+
+    public Double getSellingPrice() { return sellingPrice; }
+    public void setSellingPrice(Double sellingPrice) { this.sellingPrice = sellingPrice; }
     @Override
     public String toString() {
         return "Batch: " + batchNumber + " - Qty: " + quantityInStock;

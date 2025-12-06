@@ -26,4 +26,15 @@ public interface ProductDAO {
     
     // Mise à jour du stock (via trigger ou manuel)
     void updateStock(Integer productId, Integer quantityChange);
+
+    List<Product> getProductsWithPagination(int offset, int limit, String search, String category, String status);
+    long getTotalProductsCount(String search, String category, String status);
+    long getActiveProductsCount();
+    long getPrescriptionProductsCount();
+    double getTotalInventoryValue();
+
+    // Méthodes utilitaires supplémentaires
+    List<Product> getProductsByManufacturer(String manufacturer);
+    List<String> getAllManufacturers();
+    List<String> getAllDosageForms();
 }
