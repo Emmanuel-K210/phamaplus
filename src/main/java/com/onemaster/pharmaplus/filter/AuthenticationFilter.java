@@ -17,19 +17,11 @@ public class AuthenticationFilter implements Filter {
             "/forgot-password",
             "/auth/forgot-password",
             "/error",
-            "/index.jsp",
-            "/index.html",
             "/css/",
             "/js/",
             "/images/",
             "/fonts/",
-            "/favicon.ico",
-            "/webjars/",
-            // API publiques
-            "/api/public/",
-            // Fichiers statiques spécifiques
-            "/static/",
-            "/resources/"
+            "/static/*",
     };
 
     @Override

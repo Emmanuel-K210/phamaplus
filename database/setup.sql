@@ -28,7 +28,7 @@ CREATE TABLE suppliers (
                            country VARCHAR(50) DEFAULT 'France',
                            reorder_level INTEGER DEFAULT 10,
                            is_active BOOLEAN DEFAULT true,
-                           barcode VARCHAR(50) UNIQUE,
+                           barcode VARCHAR(50) ,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -334,7 +334,191 @@ CREATE TABLE application_parameters (
 
 CREATE INDEX idx_parameters_key ON application_parameters(parameter_key);
 CREATE INDEX idx_parameters_category ON application_parameters(category);
+--Tables de medical_receipts (recu medical)
+CREATE TABLE medical_receipts (
+                                  receipt_id SERIAL PRIMARY KEY,
+                                  receipt_number VARCHAR(50) UNIQUE NOT NULL,
+                                  receipt_date TIMESTAMP NOT NULL,
+                                  patient_name VARCHAR(255) NOT NULL,
+                                  patient_contact VARCHAR(50),
+                                  service_type VARCHAR(100) NOT NULL,
+                                  amount NUMERIC(15, 2) NOT NULL CHECK (amount >= 0),
+                                  amount_in_words TEXT,
+                                  served_by VARCHAR(100),
+                                  notes TEXT,
+                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+CREATE TABLE receipt_sequence (
+                                  id SERIAL PRIMARY KEY,
+                                  prefix VARCHAR(10) DEFAULT 'REC',
+                                  year INTEGER NOT NULL,
+                                  month INTEGER NOT NULL,
+                                  last_number INTEGER DEFAULT 0,
+                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                  UNIQUE (prefix, year, month)
+);
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+   CREATE OR REPLACE FUNCTION generate_receipt_number()
+RETURNS VARCHAR(50) AS $$
+DECLARE
+current_year INTEGER;
+    current_month INTEGER;
+    next_number INTEGER;
+    new_receipt_number VARCHAR(50);
+BEGIN
+    current_year := EXTRACT(YEAR FROM CURRENT_DATE);
+    current_month := EXTRACT(MONTH FROM CURRENT_DATE);
+
+    -- Récupérer et incrémenter le numéro
+SELECT COALESCE(last_number, 0) + 1 INTO next_number
+FROM receipt_sequence
+WHERE prefix = 'REC'
+          AND year = current_year
+          AND month = current_month
+    FOR UPDATE;
+
+-- Si pas de séquence, en créer une
+IF next_number IS NULL THEN
+        INSERT INTO receipt_sequence (prefix, year, month, last_number)
+        VALUES ('REC', current_year, current_month, 1);
+
+        next_number := 1;
+ELSE
+        -- Mettre à jour la séquence
+UPDATE receipt_sequence
+SET last_number = next_number
+WHERE prefix = 'REC'
+          AND year = current_year
+          AND month = current_month;
+END IF;
+
+-- Format: REC-YYYYMM-000001
+new_receipt_number := 'REC-' ||
+                         LPAD(current_year::TEXT, 4, '0') ||
+                         LPAD(current_month::TEXT, 2, '0') ||
+                         '-' ||
+                         LPAD(next_number::TEXT, 6, '0');
+
+RETURN new_receipt_number;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION generate_receipt_number()
+RETURNS VARCHAR(50) AS $$
+DECLARE
+current_year INTEGER;
+    current_month INTEGER;
+    next_number INTEGER;
+    new_receipt_number VARCHAR(50);
+BEGIN
+    current_year := EXTRACT(YEAR FROM CURRENT_DATE);
+    current_month := EXTRACT(MONTH FROM CURRENT_DATE);
+
+    -- Récupérer et incrémenter le numéro
+SELECT COALESCE(last_number, 0) + 1 INTO next_number
+FROM receipt_sequence
+WHERE prefix = 'REC'
+          AND year = current_year
+          AND month = current_month
+    FOR UPDATE;
+
+-- Si pas de séquence, en créer une
+IF next_number IS NULL THEN
+        INSERT INTO receipt_sequence (prefix, year, month, last_number)
+        VALUES ('REC', current_year, current_month, 1);
+
+        next_number := 1;
+ELSE
+        -- Mettre à jour la séquence
+UPDATE receipt_sequence
+SET last_number = next_number
+WHERE prefix = 'REC'
+          AND year = current_year
+          AND month = current_month;
+END IF;
+
+    -- Format: REC-YYYYMM-000001
+    new_receipt_number := 'REC-' ||
+                         LPAD(current_year::TEXT, 4, '0') ||
+                         LPAD(current_month::TEXT, 2, '0') ||
+                         '-' ||
+                         LPAD(next_number::TEXT, 6, '0');
+
+RETURN new_receipt_number;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION validate_receipt_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Vérifier que le montant est positif
+    IF NEW.amount <= 0 THEN
+        RAISE EXCEPTION 'Le montant doit être positif';
+END IF;
+
+    -- Générer un numéro de reçu s'il n'est pas fourni
+    IF NEW.receipt_number IS NULL THEN
+        NEW.receipt_number := generate_receipt_number();
+END IF;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger pour la date de mise à jour
+CREATE TRIGGER update_medical_receipts_updated_at
+    BEFORE UPDATE ON medical_receipts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger pour la validation à l'insertion
+CREATE TRIGGER before_medical_receipts_insert
+    BEFORE INSERT ON medical_receipts
+    FOR EACH ROW
+    EXECUTE FUNCTION validate_receipt_insert();
+
+INSERT INTO receipt_sequence (prefix, year, month, last_number)
+VALUES ('REC', EXTRACT(YEAR FROM CURRENT_DATE), EXTRACT(MONTH FROM CURRENT_DATE), 0)
+    ON CONFLICT (prefix, year, month) DO NOTHING;
+
+CREATE INDEX idx_medical_receipts_number ON medical_receipts(receipt_number);
+CREATE INDEX idx_medical_receipts_date ON medical_receipts(receipt_date);
+CREATE INDEX idx_medical_receipts_patient ON medical_receipts(patient_name);
+CREATE INDEX idx_medical_receipts_service ON medical_receipts(service_type);
+
+CREATE TABLE medical_service_types (
+                                       service_id SERIAL PRIMARY KEY,
+                                       service_code VARCHAR(20) UNIQUE NOT NULL,
+                                       service_name VARCHAR(100) NOT NULL,
+                                       service_category VARCHAR(50),
+                                       default_price NUMERIC(15, 2),
+                                       is_active BOOLEAN DEFAULT TRUE,
+                                       description TEXT,
+                                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO medical_service_types (service_code, service_name, service_category, default_price) VALUES
+                                                                                                    ('OPHT', 'Ophtamo', 'Consultation', 5000.00),
+                                                                                                    ('GYN', 'Gynéco', 'Consultation', 7000.00),
+                                                                                                    ('ECHO', 'Écho', 'Examen', 15000.00),
+                                                                                                    ('LABO', 'Labo', 'Examen', 10000.00),
+                                                                                                    ('CONS-GEN', 'Consultation générale', 'Consultation', 3000.00),
+                                                                                                    ('CONS-PRE', 'Consultation prénatale', 'Consultation', 5000.00),
+                                                                                                    ('DERMA', 'Dermato', 'Consultation', 6000.00),
+                                                                                                    ('DENT', 'Dentiste', 'Consultation', 8000.00),
+                                                                                                    ('AUTRE', 'Autre', 'Divers', 0.00);
 -- =============================================
 -- VUES UTILES
 -- =============================================

@@ -1,14 +1,12 @@
 package com.onemaster.pharmaplus.dao.impl;
 
 import com.onemaster.pharmaplus.config.DatabaseConnection;
-import com.onemaster.pharmaplus.controller.BaseServlet;
 import com.onemaster.pharmaplus.dao.service.SaleDAO;
 import com.onemaster.pharmaplus.model.Sale;
 import com.onemaster.pharmaplus.model.SaleItem;
 
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -19,14 +17,14 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public Integer insertSale(Sale sale) {
         String sql = "INSERT INTO sales (customer_id, prescription_id, sale_date, " +
-                     "subtotal, discount_amount, tax_amount, total_amount, " +
-                     "payment_method, payment_status, served_by, notes) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
+                "subtotal, discount_amount, tax_amount, total_amount, " +
+                "payment_method, payment_status, served_by, notes) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setSaleParameters(stmt, sale);
-            
+
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
                 try (ResultSet rs = stmt.getGeneratedKeys()) {
@@ -41,35 +39,35 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return null;
     }
-    
+
     @Override
     public void updateSale(Sale sale) {
         String sql = "UPDATE sales SET customer_id = ?, prescription_id = ?, " +
-                     "subtotal = ?, discount_amount = ?, tax_amount = ?, " +
-                     "total_amount = ?, payment_method = ?, payment_status = ?, " +
-                     "served_by = ?, notes = ? WHERE sale_id = ?";
-        
+                "subtotal = ?, discount_amount = ?, tax_amount = ?, " +
+                "total_amount = ?, payment_method = ?, payment_status = ?, " +
+                "served_by = ?, notes = ? WHERE sale_id = ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             setSaleParameters(stmt, sale);
             stmt.setInt(11, sale.getSaleId());
-            
+
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Erreur mise à jour vente: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public void deleteSale(Integer saleId) {
         // D'abord supprimer les items
         deleteSaleItems(saleId);
-        
+
         String sql = "DELETE FROM sales WHERE sale_id = ?";
-        
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -77,18 +75,18 @@ public class SaleDAOImpl implements SaleDAO {
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public Sale findSaleById(Integer saleId) {
         String sql = "SELECT s.*, c.first_name, c.last_name " +
-                     "FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE s.sale_id = ?";
-        
+                "FROM sales s " +
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE s.sale_id = ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapSaleWithCustomer(rs);
@@ -100,20 +98,20 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return null;
     }
-    
+
     @Override
     public List<Sale> findAllSales() {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name " +
-                     "FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "ORDER BY s.sale_date DESC";
-        
+                "FROM sales s " +
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "ORDER BY s.sale_date DESC";
+
         try (
                 Connection connection = DatabaseConnection.getConnection();
                 Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
+                ResultSet rs = stmt.executeQuery(sql)) {
+
             while (rs.next()) {
                 sales.add(mapSaleWithCustomer(rs));
             }
@@ -123,15 +121,15 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return sales;
     }
-    
+
     @Override
     public void insertSaleItem(SaleItem saleItem) {
         String sql = "INSERT INTO sale_items (sale_id, product_id, inventory_id, " +
-                     "quantity, unit_price, discount, line_total) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
+                "quantity, unit_price, discount, line_total) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleItem.getSaleId());
             stmt.setInt(2, saleItem.getProductId());
             stmt.setInt(3, saleItem.getInventoryId());
@@ -139,27 +137,27 @@ public class SaleDAOImpl implements SaleDAO {
             stmt.setDouble(5, saleItem.getUnitPrice());
             stmt.setDouble(6, saleItem.getDiscount() != null ? saleItem.getDiscount() : 0.0);
             stmt.setDouble(7, saleItem.getLineTotal());
-            
+
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Erreur insertion item vente: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     @Override
     public List<SaleItem> findItemsBySaleId(Integer saleId) {
         List<SaleItem> items = new ArrayList<>();
         String sql = "SELECT si.*, p.product_name, i.batch_number " +
-                     "FROM sale_items si " +
-                     "JOIN products p ON si.product_id = p.product_id " +
-                     "LEFT JOIN inventory i ON si.inventory_id = i.inventory_id " +
-                     "WHERE si.sale_id = ?";
-        
+                "FROM sale_items si " +
+                "JOIN products p ON si.product_id = p.product_id " +
+                "LEFT JOIN inventory i ON si.inventory_id = i.inventory_id " +
+                "WHERE si.sale_id = ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     items.add(mapSaleItemWithDetails(rs));
@@ -171,13 +169,13 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return items;
     }
-    
+
     @Override
     public void deleteSaleItems(Integer saleId) {
         String sql = "DELETE FROM sale_items WHERE sale_id = ?";
-        
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -185,18 +183,118 @@ public class SaleDAOImpl implements SaleDAO {
             e.printStackTrace();
         }
     }
-    
+
+    @Override
+    public Boolean existsByIdAndStatus(Integer saleId, String status) {
+        if (saleId == null || status == null) {
+            return false;
+        }
+
+        String sql = "SELECT COUNT(*) FROM sales WHERE sale_id = ? AND payment_status = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, saleId);
+            stmt.setString(2, status);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification de la vente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean updateStatus(Integer saleId, String status) {
+        if (saleId == null || status == null) {
+            return false;
+        }
+
+        String sql = "UPDATE sales SET payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE sale_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status);
+            stmt.setInt(2, saleId);
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la mise à jour du statut: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Si vous avez besoin de récupérer l'objet Sale complet
+    @Override
+    public Sale findSalesByIdAndStatus(Integer saleId, String status) {
+        if (saleId == null || status == null) {
+            return null;
+        }
+
+        String sql = "SELECT * FROM sales WHERE sale_id = ? AND payment_status = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, saleId);
+            stmt.setString(2, status);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToSale(rs);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la recherche de la vente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private Sale mapResultSetToSale(ResultSet rs) throws SQLException {
+        Sale sale = new Sale();
+        sale.setSaleId(rs.getInt("sale_id"));
+        sale.setCustomerId(rs.getInt("customer_id"));
+        sale.setSubtotal(rs.getDouble("subtotal"));
+        sale.setDiscountAmount(rs.getDouble("discount_amount"));
+        sale.setTaxAmount(rs.getDouble("tax_amount"));
+        sale.setTotalAmount(rs.getDouble("total_amount"));
+        sale.setPaymentMethod(rs.getString("payment_method"));
+        sale.setPaymentStatus(rs.getString("payment_status"));
+        sale.setNotes(rs.getString("notes"));
+        sale.setServedBy(rs.getString("served_by"));
+
+        Timestamp saleDate = rs.getTimestamp("sale_date");
+        if (saleDate != null) {
+            sale.setSaleDate(saleDate.toLocalDateTime());
+        }
+
+        return sale;
+    }
+
     @Override
     public List<Sale> findSalesByCustomer(Integer customerId) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE s.customer_id = ? ORDER BY s.sale_date DESC";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE s.customer_id = ? ORDER BY s.sale_date DESC";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, customerId);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -208,18 +306,18 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return sales;
     }
-    
+
     @Override
     public List<Sale> findSalesByDate(LocalDate date) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE DATE(s.sale_date) = ? ORDER BY s.sale_date DESC";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE DATE(s.sale_date) = ? ORDER BY s.sale_date DESC";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(date));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -231,17 +329,17 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return sales;
     }
-    
+
     @Override
     public Double getTotalRevenue(LocalDate start, LocalDate end) {
         String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM sales " +
-                     "WHERE DATE(sale_date) BETWEEN ? AND ?";
-        
+                "WHERE DATE(sale_date) BETWEEN ? AND ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getDouble(1);
@@ -253,19 +351,19 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return 0.0;
     }
-    
+
     @Override
     public Integer getTotalItemsSold(LocalDate start, LocalDate end) {
         String sql = "SELECT COALESCE(SUM(si.quantity), 0) " +
-                     "FROM sales s " +
-                     "JOIN sale_items si ON s.sale_id = si.sale_id " +
-                     "WHERE DATE(s.sale_date) BETWEEN ? AND ?";
-        
+                "FROM sales s " +
+                "JOIN sale_items si ON s.sale_id = si.sale_id " +
+                "WHERE DATE(s.sale_date) BETWEEN ? AND ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);
@@ -286,18 +384,18 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Object[]> getTopSellingProducts(int limit) {
         List<Object[]> results = new ArrayList<>();
         String sql = "SELECT p.product_id, p.product_name, " +
-                     "SUM(si.quantity) as total_quantity, " +
-                     "SUM(si.line_total) as total_revenue " +
-                     "FROM sale_items si " +
-                     "JOIN products p ON si.product_id = p.product_id " +
-                     "GROUP BY p.product_id, p.product_name " +
-                     "ORDER BY total_quantity DESC " +
-                     "LIMIT ?";
-        
+                "SUM(si.quantity) as total_quantity, " +
+                "SUM(si.line_total) as total_revenue " +
+                "FROM sale_items si " +
+                "JOIN products p ON si.product_id = p.product_id " +
+                "GROUP BY p.product_id, p.product_name " +
+                "ORDER BY total_quantity DESC " +
+                "LIMIT ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, limit);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Object[] row = new Object[4];
@@ -314,20 +412,20 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return results;
     }
-    
+
     @Override
     public Double getTodayRevenue() {
         return getTotalRevenue(LocalDate.now(), LocalDate.now());
     }
-    
+
     @Override
     public Integer getTodayTransactions() {
         String sql = "SELECT COUNT(*) FROM sales WHERE DATE(sale_date) = CURRENT_DATE";
-        
+
         try (Connection connection = DatabaseConnection.getConnection();
-                Statement stmt = connection.createStatement();
+             Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -337,18 +435,18 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return 0;
     }
-    
+
     @Override
     public List<Sale> getRecentSales(int limit) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "ORDER BY s.sale_date DESC LIMIT ?";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "ORDER BY s.sale_date DESC LIMIT ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, limit);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -360,22 +458,22 @@ public class SaleDAOImpl implements SaleDAO {
         }
         return sales;
     }
-    
+
     // ========== HELPER METHODS ==========
-    
+
     private void setSaleParameters(PreparedStatement stmt, Sale sale) throws SQLException {
         if (sale.getCustomerId() != null) {
             stmt.setInt(1, sale.getCustomerId());
         } else {
             stmt.setNull(1, Types.INTEGER);
         }
-        
+
         if (sale.getPrescriptionId() != null) {
             stmt.setInt(2, sale.getPrescriptionId());
         } else {
             stmt.setNull(2, Types.INTEGER);
         }
-        
+
         stmt.setTimestamp(3, Timestamp.valueOf(sale.getSaleDate()));
         stmt.setDouble(4, sale.getSubtotal());
         stmt.setDouble(5, sale.getDiscountAmount());
@@ -386,21 +484,21 @@ public class SaleDAOImpl implements SaleDAO {
         stmt.setString(10, sale.getServedBy());
         stmt.setString(11, sale.getNotes());
     }
-    
+
     private Sale mapSaleWithCustomer(ResultSet rs) throws SQLException {
         Sale sale = new Sale();
         sale.setSaleId(rs.getInt("sale_id"));
-        
+
         int customerId = rs.getInt("customer_id");
         if (!rs.wasNull()) {
             sale.setCustomerId(customerId);
         }
-        
+
         int prescriptionId = rs.getInt("prescription_id");
         if (!rs.wasNull()) {
             sale.setPrescriptionId(prescriptionId);
         }
-        
+
         sale.setSaleDate(rs.getTimestamp("sale_date").toLocalDateTime());
         sale.setSubtotal(rs.getDouble("subtotal"));
         sale.setDiscountAmount(rs.getDouble("discount_amount"));
@@ -410,17 +508,17 @@ public class SaleDAOImpl implements SaleDAO {
         sale.setPaymentStatus(rs.getString("payment_status"));
         sale.setServedBy(rs.getString("served_by"));
         sale.setNotes(rs.getString("notes"));
-        
+
         // Champs de jointure
         String firstName = rs.getString("first_name");
         String lastName = rs.getString("last_name");
         if (firstName != null && lastName != null) {
             sale.setCustomerName(firstName + " " + lastName);
         }
-        
+
         return sale;
     }
-    
+
     private SaleItem mapSaleItemWithDetails(ResultSet rs) throws SQLException {
         SaleItem item = new SaleItem();
         item.setSaleItemId(rs.getInt("sale_item_id"));
@@ -431,11 +529,11 @@ public class SaleDAOImpl implements SaleDAO {
         item.setUnitPrice(rs.getDouble("unit_price"));
         item.setDiscount(rs.getDouble("discount"));
         item.setLineTotal(rs.getDouble("line_total"));
-        
+
         // Champs de jointure
         item.setProductName(rs.getString("product_name"));
         item.setBatchNumber(rs.getString("batch_number"));
-        
+
         return item;
     }
 
@@ -444,15 +542,15 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Sale> findSalesByDateRange(LocalDate start, LocalDate end) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
-                     "ORDER BY s.sale_date DESC";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
+                "ORDER BY s.sale_date DESC";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -468,13 +566,13 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Sale> findSalesByPaymentMethod(String paymentMethod) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE s.payment_method = ? ORDER BY s.sale_date DESC";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE s.payment_method = ? ORDER BY s.sale_date DESC";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, paymentMethod);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -490,13 +588,13 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Sale> findSalesByPrescription(Integer prescriptionId) {
         List<Sale> sales = new ArrayList<>();
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
-                     "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
-                     "WHERE s.prescription_id = ? ORDER BY s.sale_date DESC";
-        
+                "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
+                "WHERE s.prescription_id = ? ORDER BY s.sale_date DESC";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, prescriptionId);
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     sales.add(mapSaleWithCustomer(rs));
@@ -511,13 +609,13 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public Integer getTotalTransactions(LocalDate start, LocalDate end) {
         String sql = "SELECT COUNT(*) FROM sales " +
-                     "WHERE DATE(sale_date) BETWEEN ? AND ?";
-        
+                "WHERE DATE(sale_date) BETWEEN ? AND ?";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);
@@ -533,20 +631,20 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Object[]> getDailySales(LocalDate start, LocalDate end) {
         List<Object[]> results = new ArrayList<>();
         String sql = "SELECT DATE(sale_date) as sale_day, " +
-                     "COUNT(*) as transactions, " +
-                     "SUM(total_amount) as revenue, " +
-                     "SUM(quantity) as items_sold " +
-                     "FROM sales s " +
-                     "LEFT JOIN sale_items si ON s.sale_id = si.sale_id " +
-                     "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
-                     "GROUP BY DATE(sale_date) " +
-                     "ORDER BY sale_day";
-        
+                "COUNT(*) as transactions, " +
+                "SUM(total_amount) as revenue, " +
+                "SUM(quantity) as items_sold " +
+                "FROM sales s " +
+                "LEFT JOIN sale_items si ON s.sale_id = si.sale_id " +
+                "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
+                "GROUP BY DATE(sale_date) " +
+                "ORDER BY sale_day";
+
         try (Connection connection = DatabaseConnection.getConnection();
-                PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Object[] row = new Object[4];

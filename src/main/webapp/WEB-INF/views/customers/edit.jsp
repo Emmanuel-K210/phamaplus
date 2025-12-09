@@ -33,7 +33,7 @@
         <div class="col-lg-8">
             <div class="modern-card p-4">
                 <form action="${pageContext.request.contextPath}/customers/edit" method="post" id="customerForm">
-                    <input type="hidden" name="id" value="${customer.customerId}">
+                    <input type="hidden" name="customerId" value="${customer.customerId}">
 
                     <!-- Informations personnelles -->
                     <div class="row mb-4">

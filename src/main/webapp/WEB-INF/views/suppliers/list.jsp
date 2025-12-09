@@ -258,10 +258,10 @@
                     </td>
                     <td class="text-center">
                       <div class="btn-group btn-group-sm" role="group">
-                        <a href="${pageContext.request.contextPath}/purchase/create?supplierId=${supplier.supplierId}"
+                        <!--<a href="${pageContext.request.contextPath}/purchase/create?supplierId=${supplier.supplierId}"
                            class="btn btn-outline-success" title="Nouvelle commande">
                           <i class="bi bi-cart-plus"></i>
-                        </a>
+                        </a>-->
                         <a href="${pageContext.request.contextPath}/suppliers/edit?id=${supplier.supplierId}"
                            class="btn btn-outline-primary" title="Modifier">
                           <i class="bi bi-pencil"></i>

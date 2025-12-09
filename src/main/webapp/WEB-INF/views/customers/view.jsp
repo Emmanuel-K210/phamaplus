@@ -113,7 +113,7 @@
                                 <p class="mb-0">
                                     <i class="bi bi-clock me-2"></i>
                                     <c:if test="${not empty customer.createdAt}">
-                                        <fmt:formatDate value="${customer.createdAt}" pattern="dd/MM/yyyy"/>
+                                        <fmt:formatDate value="${customer.createdAtAsDate}" pattern="dd/MM/yyyy"/>
                                     </c:if>
                                 </p>
                             </div>

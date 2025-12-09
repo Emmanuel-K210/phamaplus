@@ -15,12 +15,18 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @WebServlet(name = "SaleServlet", urlPatterns = {
         "/sales",
@@ -28,10 +34,13 @@ import java.util.List;
         "/sales/create",
         "/sales/view",
         "/sales/cancel",
+        "/sales/complete",
         "/sales/report",
         "/sales/daily",
+        "/sales/export",
         "/sales/api/products",
         "/sales/api/customers",
+        "/sales/api/stats"
 })
 public class SaleServlet extends HttpServlet {
 
@@ -75,11 +84,17 @@ public class SaleServlet extends HttpServlet {
             case "/sales/daily":
                 showDailySales(request, response);
                 break;
+            case "/sales/export":
+                exportSales(request, response);
+                break;
             case "/sales/api/products":
                 searchProductsAPI(request, response);
                 break;
             case "/sales/api/customers":
                 searchCustomersAPI(request, response);
+                break;
+            case "/sales/api/stats":
+                getSalesStatsAPI(request, response);
                 break;
             default:
                 listSales(request, response);
@@ -97,45 +112,140 @@ public class SaleServlet extends HttpServlet {
             createSale(request, response);
         } else if ("/sales/cancel".equals(action)) {
             cancelSale(request, response);
+        } else if ("/sales/complete".equals(action)) {
+            completeSale(request, response);
         }
     }
 
     private void listSales(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // IMPORTANT: Désactiver le cache
+        // Désactiver le cache
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
         try {
-            // Par défaut, afficher les ventes d'aujourd'hui
-            LocalDate today = LocalDate.now();
-            List<Sale> sales = saleService.getSalesByDate(today);
+            // Récupérer les paramètres de filtrage
+            String search = request.getParameter("search");
+            String status = request.getParameter("status");
+            String dateParam = request.getParameter("date");
 
-            // Vérifier que les sales ne sont pas null
-            if (sales == null) {
-                sales = new ArrayList<>();
-            }
-
-            request.setAttribute("sales", sales);
-            request.setAttribute("date", today);
-            request.setAttribute("totalSales", sales.size());
-
-            // Récupérer le résumé du jour
-            try {
-                SalesSummary summary = saleService.getTodaySummary();
-                if (summary != null) {
-                    request.setAttribute("todaySales", summary.getRevenue());
-                    request.setAttribute("totalTransactions", summary.getTransactions());
-                    request.setAttribute("avgTicket", summary.getRevenue());
+            // Pagination
+            int page = 1;
+            int pageSize = 20;
+            if (request.getParameter("page") != null) {
+                try {
+                    page = Integer.parseInt(request.getParameter("page"));
+                } catch (NumberFormatException e) {
+                    page = 1;
                 }
-            } catch (Exception e) {
-                System.err.println("Error loading sales summary: " + e.getMessage());
-                request.setAttribute("todaySales", 0.0);
-                request.setAttribute("totalTransactions", 0);
-                request.setAttribute("avgTicket", 0.0);
             }
+
+            // Date par défaut = aujourd'hui
+            LocalDate date = LocalDate.now();
+            if (dateParam != null && !dateParam.isEmpty()) {
+                try {
+                    date = LocalDate.parse(dateParam);
+                } catch (Exception e) {
+                    // Garder la date d'aujourd'hui
+                }
+            }
+
+            // Récupérer les ventes filtrées
+            List<Sale> sales = saleService.getSalesByDate(date);
+
+            // Appliquer les filtres supplémentaires si nécessaire
+            if (search != null && !search.isEmpty()) {
+                sales = sales.stream()
+                        .filter(sale -> {
+                            // Filtrer par ID de vente ou nom de client
+                            if (sale.getSaleId().toString().contains(search)) {
+                                return true;
+                            }
+                            if (sale.getCustomerId() != null) {
+                                Customer customer = customerService.getCustomerById(sale.getCustomerId());
+                                if (customer != null && customer.getFullName().toLowerCase().contains(search.toLowerCase())) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
+                        .collect(Collectors.toList());
+            }
+
+            if (status != null && !status.isEmpty()) {
+                sales = sales.stream()
+                        .filter(sale -> status.equals(sale.getPaymentStatus()))
+                        .collect(Collectors.toList());
+            }
+
+            // Calcul de la pagination
+            int totalSales = sales.size();
+            int totalPages = (int) Math.ceil((double) totalSales / pageSize);
+            int startIndex = (page - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, totalSales);
+
+            List<Sale> paginatedSales = totalSales > 0 ?
+                    sales.subList(startIndex, endIndex) :
+                    new ArrayList<>();
+
+            // Convertir en DTO
+            List<SaleDTO> saleDTOS = new ArrayList<>();
+            for (Sale sale : paginatedSales) {
+                Customer customer = null;
+                if (sale.getCustomerId() != null) {
+                    customer = customerService.getCustomerById(sale.getCustomerId());
+                }
+                saleDTOS.add(toSaleDTO(sale, customer));
+            }
+
+            // === CORRECTION : CALCUL EN ENTIERS POUR FCFA ===
+
+            // 1. Ventes d'aujourd'hui (payées seulement)
+            List<Sale> allSalesToday = saleService.getSalesByDate(LocalDate.now());
+
+            double todayRevenue = 0;
+            int todayTransactions = 0;
+
+            for (Sale sale : allSalesToday) {
+                if ("paid".equals(sale.getPaymentStatus())) {
+                    double amount = sale.getTotalAmount();
+                    todayRevenue += amount;
+                    todayTransactions++;
+                }
+            }
+
+            // 2. Ventes du mois (payées seulement)
+            LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
+            LocalDate lastDayOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+            List<Sale> monthSalesList = saleService.getSalesByDateRange(firstDayOfMonth, lastDayOfMonth);
+
+            double monthRevenue = monthSalesList
+                    .stream()
+                    .mapToDouble(Sale::getTotalAmount)
+                    .sum();
+
+            // 3. Ticket moyen (entier arrondi)
+            double avgTicket = todayTransactions > 0 ? todayRevenue / todayTransactions : 0;
+
+            // === FORMATAGE FINAL ===
+
+            request.setAttribute("totalTransactions", todayTransactions);
+            request.setAttribute("todaySalesValue", todayRevenue);
+            request.setAttribute("monthSalesValue", monthRevenue);
+            request.setAttribute("avgTicketValue", avgTicket);
+
+            // Pagination et filtres
+            request.setAttribute("sales", saleDTOS);
+            request.setAttribute("date", date);
+            request.setAttribute("totalSales", totalSales);
+            request.setAttribute("currentPage", page);
+            request.setAttribute("totalPages", totalPages);
+            request.setAttribute("pageSize", pageSize);
+            request.setAttribute("searchParam", search != null ? search : "");
+            request.setAttribute("statusParam", status != null ? status : "");
+            request.setAttribute("dateParam", dateParam != null ? dateParam : "");
 
             request.setAttribute("pageTitle", "Liste des Ventes");
             request.setAttribute("contentPage", "/WEB-INF/views/sales/list.jsp");
@@ -145,10 +255,68 @@ public class SaleServlet extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("errorMessage", "Erreur lors du chargement des ventes: " + e.getMessage());
             request.setAttribute("sales", new ArrayList<>());
+            request.setAttribute("todaySales", "0 FCFA");
+            request.setAttribute("monthSales", "0 FCFA");
+            request.setAttribute("totalTransactions", 0);
+            request.setAttribute("avgTicket", "0 FCFA");
             request.setAttribute("pageTitle", "Liste des Ventes");
             request.setAttribute("contentPage", "/WEB-INF/views/sales/list.jsp");
             request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
         }
+    }
+
+    /**
+     * Convertit un Sale en SaleDTO avec gestion des montants en entiers
+     */
+    private SaleDTO toSaleDTO(Sale sale, Customer customer) {
+        if (sale == null) {
+            return SaleDTO.builder().build();
+        }
+
+        // Calculer le nombre total d'articles (quantité totale, pas nombre de lignes)
+        int totalItems = calculateTotalItems(sale.getSaleId());
+
+        return SaleDTO.builder()
+                .saleId(sale.getSaleId())
+                .customerName(customer != null ? customer.getFullName() : "Client non enregistré")
+                .customerPhone(customer != null ? customer.getPhone() : "")
+                .totalItems(totalItems)
+                .totalAmount(sale.getTotalAmount()) // Garder en Double pour compatibilité
+                .discountAmount(sale.getDiscountAmount())
+                .paymentMethod(sale.getPaymentMethod())
+                .paymentStatus(sale.getPaymentStatus())
+                .saleDate(convertToDate(sale.getSaleDate()))
+                .build();
+    }
+
+
+    /**
+     * Calcule le nombre total d'articles dans une vente (somme des quantités)
+     */
+    private int calculateTotalItems(Integer saleId) {
+        if (saleId == null) return 0;
+
+        try {
+            SaleDAO saleDAO = new SaleDAOImpl();
+            List<SaleItem> items = saleDAO.findItemsBySaleId(saleId);
+            if (items != null && !items.isEmpty()) {
+                // Somme des quantités de chaque item
+                return items.stream()
+                        .mapToInt(SaleItem::getQuantity)
+                        .sum();
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur calcul total items pour vente #" + saleId + ": " + e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * Convertit LocalDateTime en Date
+     */
+    private Date convertToDate(LocalDateTime localDateTime) {
+        if (localDateTime == null) return new Date();
+        return java.sql.Timestamp.valueOf(localDateTime);
     }
 
     private void showNewSaleForm(HttpServletRequest request, HttpServletResponse response)
@@ -180,12 +348,12 @@ public class SaleServlet extends HttpServlet {
 
             // Créer les items et calculer les totaux
             List<SaleItem> items = new ArrayList<>();
-            double subtotal = 0.0;
+            BigDecimal subtotal = BigDecimal.ZERO;
 
             for (int i = 0; i < productIds.length; i++) {
                 Integer productId = Integer.parseInt(productIds[i]);
                 Integer quantity = Integer.parseInt(quantities[i]);
-                Double price = Double.parseDouble(prices[i]);
+                BigDecimal price = new BigDecimal(prices[i]);
 
                 // Trouver le meilleur lot pour ce produit
                 Inventory bestBatch = inventoryService.findBestBatchForProduct(productId, quantity);
@@ -195,16 +363,16 @@ public class SaleServlet extends HttpServlet {
                     throw new IllegalArgumentException("Stock insuffisant pour le produit: " + productName);
                 }
 
-                double lineTotal = quantity * price;
-                subtotal += lineTotal;
+                BigDecimal lineTotal = price.multiply(new BigDecimal(quantity));
+                subtotal = subtotal.add(lineTotal);
 
                 SaleItem item = new SaleItem();
                 item.setProductId(productId);
                 item.setInventoryId(bestBatch.getInventoryId());
                 item.setQuantity(quantity);
-                item.setUnitPrice(price);
+                item.setUnitPrice(price.doubleValue());
                 item.setDiscount(0.0);
-                item.setLineTotal(lineTotal);
+                item.setLineTotal(lineTotal.doubleValue());
 
                 items.add(item);
             }
@@ -218,35 +386,36 @@ public class SaleServlet extends HttpServlet {
                 try {
                     sale.setCustomerId(Integer.parseInt(customerIdStr));
                 } catch (NumberFormatException e) {
-                    // Ignorer si l'ID client n'est pas valide
                     sale.setCustomerId(null);
                 }
             }
 
             // Calculs financiers
             String discountStr = request.getParameter("discount");
-            double discountAmount = 0.0;
+            BigDecimal discountAmount = BigDecimal.ZERO;
             if (discountStr != null && !discountStr.isEmpty()) {
                 try {
-                    discountAmount = Double.parseDouble(discountStr);
-                    if (discountAmount < 0) discountAmount = 0.0;
+                    discountAmount = new BigDecimal(discountStr);
+                    if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+                        discountAmount = BigDecimal.ZERO;
+                    }
                 } catch (NumberFormatException e) {
-                    discountAmount = 0.0;
+                    discountAmount = BigDecimal.ZERO;
                 }
             }
 
-            double taxAmount = 0.0; // Pas de taxe pour le moment
-            double totalAmount = subtotal - discountAmount + taxAmount;
+            BigDecimal taxAmount = BigDecimal.ZERO;
+            BigDecimal totalAmount = subtotal.subtract(discountAmount).add(taxAmount);
 
             // Vérifier que le total est positif
-            if (totalAmount <= 0) {
+            if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Le montant total doit être positif. Vérifiez la remise.");
             }
 
-            sale.setSubtotal(subtotal);
-            sale.setDiscountAmount(discountAmount);
-            sale.setTaxAmount(taxAmount);
-            sale.setTotalAmount(totalAmount);
+            sale.setSubtotal(subtotal.doubleValue());
+            sale.setDiscountAmount(discountAmount.doubleValue());
+            sale.setTaxAmount(taxAmount.doubleValue());
+            sale.setTotalAmount(totalAmount.doubleValue());
 
             // Date de vente
             sale.setSaleDate(LocalDateTime.now());
@@ -259,26 +428,37 @@ public class SaleServlet extends HttpServlet {
             // Servi par
             String servedBy = request.getParameter("servedBy");
             if (servedBy == null || servedBy.trim().isEmpty()) {
-                HttpSession session = request.getSession(false);
-                String username = (String) session.getAttribute("username");
-                sale.setServedBy(username);
+                HttpSession session = request.getSession();
+                if (session != null) {
+                    String username = (String) session.getAttribute("username");
+                    sale.setServedBy(username != null ? username : "System");
+                } else {
+                    sale.setServedBy("System");
+                }
             }
-
 
             // Notes
             String notes = request.getParameter("notes");
             sale.setNotes(notes);
 
             // Créer la vente
+
             Integer saleId = saleService.createSale(sale, items);
 
             if (saleId != null) {
-                // Vérifier si on doit imprimer le reçu
+                // Récupérer les options d'impression
                 String printReceipt = request.getParameter("printReceipt");
+                String printThermal = request.getParameter("printThermal"); // Nouveau paramètre
+
                 String redirectUrl = request.getContextPath() + "/sales/view?id=" + saleId + "&success=true";
 
                 if ("on".equals(printReceipt)) {
                     redirectUrl += "&print=true";
+                }
+
+                // Si impression thermique demandée
+                if ("on".equals(printThermal)) {
+                    redirectUrl += "&printThermal=true";
                 }
 
                 response.sendRedirect(redirectUrl);
@@ -309,12 +489,27 @@ public class SaleServlet extends HttpServlet {
             Sale sale = saleService.getSaleWithItems(saleId);
 
             if (sale != null) {
-                // Récupérer les items
                 SaleDAO saleDAO = new SaleDAOImpl();
                 List<SaleItem> items = saleDAO.findItemsBySaleId(saleId);
 
                 request.setAttribute("sale", sale);
                 request.setAttribute("items", items);
+
+                // CORRECTION : Gestion de l'impression thermique
+                String printThermal = request.getParameter("printThermal");
+
+                if ("true".equals(printThermal)) {
+                    // Rediriger vers le servlet de ticket thermique pour impression directe
+                    response.sendRedirect(request.getContextPath() +
+                            "/sales/thermal-ticket?id=" + saleId);
+                    return;
+                }
+
+                // Vérifier si on doit imprimer le reçu HTML normal
+                if ("true".equals(request.getParameter("print"))) {
+                    request.setAttribute("printMode", true);
+                }
+
                 request.setAttribute("pageTitle", "Reçu de Vente #" + saleId);
                 request.setAttribute("contentPage", "/WEB-INF/views/sales/receipt.jsp");
                 request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
@@ -326,10 +521,56 @@ public class SaleServlet extends HttpServlet {
         }
     }
 
+    private void exportSales(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        response.getWriter().println("<h1>Export PDF (À implémenter)</h1>");
+        response.getWriter().println("<p>Fonctionnalité d'export PDF à implémenter.</p>");
+    }
+
+    private void completeSale(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        try {
+            Integer saleId = Integer.parseInt(request.getParameter("id"));
+            boolean success = saleService.updateSaleStatus(saleId, "paid");
+
+            if (success) {
+                response.sendRedirect(request.getContextPath() + "/sales?success=Vente+marquée+comme+payée");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/sales?error=Échec+de+la+mise+à+jour");
+            }
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/sales?error=ID+invalide");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/sales?error=Erreur:+" + e.getMessage());
+        }
+    }
+
+    private void cancelSale(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        try {
+            Integer saleId = Integer.parseInt(request.getParameter("id"));
+            boolean success = saleService.cancelSale(saleId);
+
+            if (success) {
+                response.sendRedirect(request.getContextPath() + "/sales?success=Vente+annulée+avec+succès");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/sales?error=Échec+de+l'annulation");
+            }
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/sales?error=ID+invalide");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/sales?error=Erreur:+" + e.getMessage());
+        }
+    }
+
     private void showSalesReport(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        LocalDate startDate = LocalDate.now().minusDays(30); // Par défaut 30 derniers jours
+        LocalDate startDate = LocalDate.now().minusDays(30);
         LocalDate endDate = LocalDate.now();
 
         if (request.getParameter("startDate") != null) {
@@ -343,10 +584,7 @@ public class SaleServlet extends HttpServlet {
         Double totalRevenue = saleService.getTotalRevenue(startDate, endDate);
         Integer totalItems = saleService.getTotalItemsSold(startDate, endDate);
 
-        // Top produits
         List<Object[]> topProducts = saleService.getTopProducts(10);
-
-        // Préparer les données pour les graphiques
 
         request.setAttribute("sales", sales);
         request.setAttribute("startDate", startDate);
@@ -388,7 +626,6 @@ public class SaleServlet extends HttpServlet {
         String query = request.getParameter("q");
         List<Product> products = productService.searchProductsByName(query);
 
-        // Retourner en JSON
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
@@ -432,22 +669,30 @@ public class SaleServlet extends HttpServlet {
         response.getWriter().write(json);
     }
 
-    private void cancelSale(HttpServletRequest request, HttpServletResponse response)
+    private void getSalesStatsAPI(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         try {
-            Integer saleId = Integer.parseInt(request.getParameter("id"));
-            boolean success = saleService.cancelSale(saleId);
+            SalesSummary summary = saleService.getTodaySummary();
+            LocalDate today = LocalDate.now();
+            LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+            LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+            Double monthSales = saleService.getTotalRevenue(firstDayOfMonth, lastDayOfMonth);
 
-            if (success) {
-                response.sendRedirect(request.getContextPath() + "/sales?success=Vente+annulée+avec+succès");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/sales?error=Échec+de+l'annulation");
-            }
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/sales?error=ID+invalide");
+            StatsDTO stats = new StatsDTO();
+            stats.todaySales = summary != null ? summary.getRevenue() : 0.0;
+            stats.monthSales = monthSales != null ? monthSales : 0.0;
+            stats.totalTransactions = summary != null ? summary.getTransactions() : 0;
+            stats.avgTicket = summary != null && summary.getTransactions() > 0 ?
+                    summary.getRevenue() / summary.getTransactions() : 0.0;
+
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(gson.toJson(stats));
+
         } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/sales?error=Erreur:+" + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
@@ -465,5 +710,12 @@ public class SaleServlet extends HttpServlet {
         String name;
         String phone;
         String email;
+    }
+
+    private static class StatsDTO {
+        Double todaySales;
+        Double monthSales;
+        Integer totalTransactions;
+        Double avgTicket;
     }
 }

@@ -24,20 +24,6 @@ public class DashboardServlet extends BaseServlet {
             if (!areServicesAvailable()) {
                 throw new ServletException("Services non disponibles");
             }
-
-            /*
-             * @param request
-             * @param totalProducts
-             * @param lowStockProducts
-             * @param expiredProducts
-             * @param expiringSoon
-             * @param todaySummary
-             * @param monthlyRevenue
-             * @param activeCustomers
-             * @param inventoryValue
-             * @param topProducts
-             * @param recentSales
-             */
             
             // 1. Statistiques produits
             int totalProducts = productService.getTotalProducts();
