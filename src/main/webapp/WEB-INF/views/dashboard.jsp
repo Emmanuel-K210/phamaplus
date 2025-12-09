@@ -296,8 +296,8 @@
                         <i class="bi bi-trophy text-warning me-2"></i>
                         Produits Populaires
                     </h5>
-                    <a href="${pageContext.request.contextPath}/reports?type=top-products"
-                       class="text-decoration-none small">Voir tout <i class="bi bi-arrow-right"></i></a>
+                   <!-- <a href="${pageContext.request.contextPath}/reports?type=top-products"
+                       class="text-decoration-none small">Voir tout <i class="bi bi-arrow-right"></i></a>-->
                 </div>
 
                 <div class="table-responsive">
@@ -447,22 +447,3 @@
     </div>
 </div>
 
-<!-- Script pour les montants F CFA
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Formater tous les montants F CFA
-        document.querySelectorAll('.fcfa-amount').forEach(function (element) {
-            const text = element.textContent.trim();
-            // Extraire le nombre du texte
-            const match = text.match(/[\d,.]+/);
-            const amount = match ? parseFloat(match[0].replace(/,/g, '')) : 0;
-
-            if (!isNaN(amount) && amount > 0) {
-                element.textContent = new Intl.NumberFormat('fr-FR').format(amount) + ' F CFA';
-                element.classList.add('currency-fcfa');
-            } else {
-                element.textContent = '0 F CFA';
-            }
-        });
-    });
-</script>-->

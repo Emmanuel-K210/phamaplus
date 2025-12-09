@@ -132,7 +132,7 @@ public class SupplierServlet extends HttpServlet {
             throws ServletException, IOException {
         
         request.setAttribute("pageTitle", "Ajouter un Fournisseur");
-        request.setAttribute("contentPage", "/WEB-INF/views/suppliers/form.jsp");
+        request.setAttribute("contentPage", "/WEB-INF/views/suppliers/add.jsp");
         
         RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/layout.jsp");
         dispatcher.forward(request, response);
@@ -175,7 +175,7 @@ public class SupplierServlet extends HttpServlet {
             request.setAttribute("errorMessage", e.getMessage());
             request.setAttribute("supplier", extractSupplierFromRequest(request));
             request.setAttribute("pageTitle", "Ajouter un Fournisseur");
-            request.setAttribute("contentPage", "/WEB-INF/views/suppliers/form.jsp");
+            request.setAttribute("contentPage", "/WEB-INF/views/suppliers/add.jsp");
             
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/layout.jsp");
             dispatcher.forward(request, response);

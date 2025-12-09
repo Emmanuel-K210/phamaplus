@@ -362,20 +362,76 @@ public class CustomerServlet extends HttpServlet {
             throws ServletException, IOException {
 
         try {
-            int customerId = Integer.parseInt(request.getParameter("id"));
-            Customer customer = extractCustomerFromRequest(request);
-            customer.setCustomerId(customerId);
+            // Récupérer l'ID du client
+            int customerId = Integer.parseInt(request.getParameter("customerId"));
 
-            customerService.updateCustomer(customer);
+            // Récupérer le client existant
+            Customer existingCustomer = customerService.getCustomerById(customerId);
+            if (existingCustomer == null) {
+                throw new IllegalArgumentException("Client non trouvé");
+            }
 
+            // Mettre à jour les données
+            Customer updatedCustomer = extractCustomerFromRequest(request);
+            updatedCustomer.setCustomerId(customerId);
+
+            // Préserver la date de création
+            updatedCustomer.setCreatedAt(existingCustomer.getCreatedAt());
+
+            // Vérifier les doublons (email et téléphone)
+            Customer emailCustomer = customerService.getCustomerByEmail(updatedCustomer.getEmail());
+            if (emailCustomer != null && emailCustomer.getCustomerId() != customerId) {
+                throw new IllegalArgumentException("Cet email est déjà utilisé par un autre client");
+            }
+
+            Customer phoneCustomer = customerService.getCustomerByPhone(updatedCustomer.getPhone());
+            if (phoneCustomer != null && phoneCustomer.getCustomerId() != customerId) {
+                throw new IllegalArgumentException("Ce numéro de téléphone est déjà utilisé par un autre client");
+            }
+
+            // Mettre à jour le client
+            customerService.updateCustomer(updatedCustomer);
+
+            // Rediriger avec message de succès
             response.sendRedirect(request.getContextPath() +
                     "/customers?success=Client+mis+à+jour+avec+succès");
 
         } catch (IllegalArgumentException e) {
+            // Récupérer l'ID pour réafficher le formulaire
+            int customerId = 0;
+            try {
+                customerId = Integer.parseInt(request.getParameter("customerId"));
+            } catch (NumberFormatException ex) {
+                // Ignorer
+            }
+
+            Customer customer = extractCustomerFromRequest(request);
+            customer.setCustomerId(customerId);
+
             request.setAttribute("errorMessage", e.getMessage());
-            request.setAttribute("customer", extractCustomerFromRequest(request));
+            request.setAttribute("customer", customer);
             request.setAttribute("pageTitle", "Modifier le Client");
             request.setAttribute("contentPage", "/WEB-INF/views/customers/edit.jsp");
+
+            RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/layout.jsp");
+            dispatcher.forward(request, response);
+        } catch (Exception e) {
+            // Gestion d'autres exceptions
+            request.setAttribute("errorMessage", "Erreur lors de la mise à jour: " + e.getMessage());
+
+            int customerId = 0;
+            try {
+                customerId = Integer.parseInt(request.getParameter("id"));
+            } catch (NumberFormatException ex) {
+                // Ignorer
+            }
+
+            Customer customer = extractCustomerFromRequest(request);
+            customer.setCustomerId(customerId);
+
+            request.setAttribute("customer", customer);
+            request.setAttribute("pageTitle", "Modifier le Client");
+            request.setAttribute("contentPage", "/WEB-INF/views/customers/form.jsp");
 
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/layout.jsp");
             dispatcher.forward(request, response);
@@ -571,7 +627,7 @@ public class CustomerServlet extends HttpServlet {
 
             request.setAttribute("customer", customer);
             request.setAttribute("pageTitle", "Modifier le Client");
-            request.setAttribute("contentPage", "/WEB-INF/views/customers/form.jsp");
+            request.setAttribute("contentPage", "/WEB-INF/views/customers/edit.jsp");
 
             RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/layout.jsp");
             dispatcher.forward(request, response);

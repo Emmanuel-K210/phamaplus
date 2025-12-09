@@ -48,19 +48,6 @@
                 <!-- Carte du reçu -->
                 <div class="card modern-card border-0 shadow-lg" id="receipt">
                     <div class="card-body p-5">
-                        <!-- En-tête de la pharmacie -->
-                        <div class="text-center mb-5">
-                            <h2 class="text-primary mb-2">
-                                <i class="bi bi-capsule-pill fs-1"></i>
-                            </h2>
-                            <h3 class="mb-1">PHARMA PLUS</h3>
-                            <p class="text-muted mb-0">
-                                123 Avenue de la Santé, Abidjan<br>
-                                Tél: +225 01 02 03 04 05 | Email: contact@pharmaplus.ci
-                            </p>
-                            <hr class="my-4">
-                        </div>
-
                         <!-- Informations de la vente -->
                         <div class="row mb-4">
                             <div class="col-md-6">
@@ -75,7 +62,7 @@
                                     <tr>
                                         <td class="text-muted">Date:</td>
                                         <td class="fw-bold">
-                                            <!-- CORRECTION ICI : Utilisation de fn:substring pour formater LocalDateTime -->
+
                                             <c:choose>
                                                 <c:when test="${not empty sale.saleDate}">
                                                     ${fn:substring(sale.saleDate, 0, 10)} ${fn:substring(sale.saleDate, 11, 16)}
@@ -128,9 +115,6 @@
                                     <c:when test="${not empty sale.customerName}">
                                         <div class="bg-light p-3 rounded">
                                             <p class="mb-1"><strong>${sale.customerName}</strong></p>
-                                            <c:if test="${not empty sale.customerId}">
-                                                <p class="text-muted small mb-0">Client ID: ${sale.customerId}</p>
-                                            </c:if>
                                         </div>
                                     </c:when>
                                     <c:otherwise>
@@ -240,12 +224,6 @@
                                 Ce reçu fait foi de transaction. Conservez-le précieusement.<br>
                                 Pour toute réclamation, présentez ce reçu dans un délai de 7 jours.
                             </p>
-                            <div class="mt-3">
-                                <small class="text-muted">
-                                    <i class="bi bi-globe me-1"></i>www.pharmaplus.ci |
-                                    <i class="bi bi-envelope me-1"></i>contact@pharmaplus.ci
-                                </small>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -255,8 +233,14 @@
                     <a href="${pageContext.request.contextPath}/sales/new" class="btn btn-primary btn-lg me-2">
                         <i class="bi bi-plus-circle me-2"></i>Nouvelle Vente
                     </a>
-                    <a href="${pageContext.request.contextPath}/sales" class="btn btn-outline-secondary btn-lg">
+                    <a href="${pageContext.request.contextPath}/sales" class="btn btn-outline-secondary btn-lg me-2">
                         <i class="bi bi-list me-2"></i>Liste des Ventes
+                    </a>
+
+                    <!-- Bouton impression thermique -->
+                    <a href="${pageContext.request.contextPath}/sales/view?id=${sale.saleId}&printThermal=true"
+                       class="btn btn-success btn-lg">
+                        <i class="bi bi-receipt me-2"></i>Imprimer Ticket Thermique
                     </a>
                 </div>
             </div>
@@ -264,6 +248,7 @@
     </div>
 </div>
 
+<!-- Style pour impression thermique -->
 <style>
     .modern-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -274,11 +259,14 @@
         border-radius: 12px;
     }
 
+    /* Style pour l'impression ticket thermique */
     @media print {
         .modern-header,
         .no-print,
         .btn,
-        .alert {
+        .alert,
+        .table-light,
+        .text-primary {
             display: none !important;
         }
 
@@ -289,6 +277,73 @@
 
         body {
             background: white !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 80mm !important;
+        }
+
+        .container, .container-fluid {
+            max-width: 80mm !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .col-lg-10, .row {
+            max-width: 80mm !important;
+            margin: 0 !important;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-size: 14px !important;
+            margin: 2px 0 !important;
+            font-weight: bold !important;
+        }
+
+        .card-body {
+            padding: 5px !important;
+        }
+
+        table {
+            width: 100% !important;
+            font-size: 10px !important;
+            border-collapse: collapse !important;
+        }
+
+        th, td {
+            padding: 2px !important;
+            border: 1px solid #000 !important;
+        }
+
+        .table-borderless td, .table-borderless th {
+            border: none !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .text-end {
+            text-align: right !important;
+        }
+
+        .text-muted {
+            color: #000 !important;
+        }
+
+        hr {
+            margin: 3px 0 !important;
+            border-color: #000 !important;
+        }
+
+        .border-top {
+            border-top: 1px solid #000 !important;
+        }
+
+        .text-primary {
+            color: #000 !important;
         }
     }
 </style>

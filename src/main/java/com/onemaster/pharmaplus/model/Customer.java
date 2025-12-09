@@ -3,6 +3,8 @@ package com.onemaster.pharmaplus.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.ZoneId;
+import java.util.Date;
 
 public class Customer {
     private Integer customerId;
@@ -49,6 +51,14 @@ public class Customer {
         if (dateOfBirth != null) {
             this.age = Period.between(dateOfBirth, LocalDate.now()).getYears();
         }
+    }
+
+    public Date getDateOfBirthAsDate() {
+        if (dateOfBirth != null) {
+            LocalDateTime dateTime = dateOfBirth.atStartOfDay();
+            Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+        }
+        return null;
     }
 
 
@@ -133,6 +143,13 @@ public class Customer {
         if (o == null || getClass() != o.getClass()) return false;
         Customer customer = (Customer) o;
         return customerId == customer.customerId;
+    }
+
+    public Date getCreatedAtAsDate() {
+        if (createdAt != null) {
+            return Date.from(createdAt.atZone(ZoneId.systemDefault()).toInstant());
+        }
+        return null;
     }
 
     @Override

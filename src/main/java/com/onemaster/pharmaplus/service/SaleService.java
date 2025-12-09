@@ -69,6 +69,10 @@ public class SaleService {
             throw new RuntimeException("Échec de la transaction de vente: " + e.getMessage());
         }
     }
+
+    public Sale findById(Integer saleId) {
+        return saleDAO.findSaleById(saleId);
+    }
     
     // Récupérer une vente avec ses items
     public Sale getSaleWithItems(Integer saleId) {
@@ -79,36 +83,6 @@ public class SaleService {
             // Pourrait ajouter les items à un objet wrapper
         }
         return sale;
-    }
-    
-    // Annuler une vente (remboursement)
-    public boolean cancelSale(Integer saleId) {
-        try {
-            // Récupérer les items de la vente
-            List<SaleItem> items = saleDAO.findItemsBySaleId(saleId);
-            
-            // Restaurer le stock pour chaque item
-            for (SaleItem item : items) {
-                // Trouver le lot d'inventaire
-                Inventory inventory = inventoryDAO.findById(item.getInventoryId());
-                if (inventory != null) {
-                    inventory.setQuantityInStock(inventory.getQuantityInStock() + item.getQuantity());
-                    inventoryDAO.update(inventory);
-                }
-            }
-            
-            // Marquer la vente comme remboursée
-            Sale sale = saleDAO.findSaleById(saleId);
-            if (sale != null) {
-                sale.setPaymentStatus("refunded");
-                saleDAO.updateSale(sale);
-                return true;
-            }
-            
-        } catch (Exception e) {
-            System.err.println("Erreur annulation vente: " + e.getMessage());
-        }
-        return false;
     }
     
     // Recherches
@@ -243,5 +217,154 @@ public class SaleService {
         }
 
         return saleDAO.getTotalItemsSold(startDate, endDate);
+    }
+
+    /**
+     * Met à jour le statut d'une vente
+     * @param saleId ID de la vente
+     * @param newStatus Nouveau statut (paid, pending, cancelled, etc.)
+     * @return true si mis à jour avec succès
+     */
+    public boolean updateSaleStatus(Integer saleId, String newStatus) {
+        if (saleId == null || newStatus == null || newStatus.trim().isEmpty()) {
+            return false;
+        }
+
+        try {
+            // Vérifier d'abord si la vente existe
+            Sale sale = saleDAO.findSaleById(saleId);
+            if (sale == null) {
+                System.err.println("Vente non trouvée avec l'ID: " + saleId);
+                return false;
+            }
+
+            // Valider la transition de statut
+            if (!isValidStatusTransition(sale.getPaymentStatus(), newStatus)) {
+                System.err.println("Transition de statut invalide: " +
+                        sale.getPaymentStatus() + " -> " + newStatus);
+                return false;
+            }
+
+            // Mettre à jour le statut
+            boolean updated = saleDAO.updateStatus(saleId, newStatus);
+
+            if (updated) {
+                System.out.println("Statut de la vente #" + saleId + " mis à jour de '" +
+                        sale.getPaymentStatus() + "' à '" + newStatus + "'");
+
+                // Journaliser l'action si nécessaire
+                logStatusChange(saleId, sale.getPaymentStatus(), newStatus);
+            }
+
+            return updated;
+
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour du statut: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Vérifie si la transition de statut est valide
+     */
+    private boolean isValidStatusTransition(String currentStatus, String newStatus) {
+        if (currentStatus == null || newStatus == null) {
+            return false;
+        }
+
+        // Définir les transitions autorisées
+        switch (currentStatus.toLowerCase()) {
+            case "pending":
+                // En attente peut devenir payée ou annulée
+                return newStatus.equalsIgnoreCase("paid") ||
+                        newStatus.equalsIgnoreCase("cancelled");
+
+            case "paid":
+                // Payée peut être remboursée
+                return newStatus.equalsIgnoreCase("refunded");
+
+            case "cancelled":
+                // Annulée ne peut pas changer
+                return false;
+
+            case "refunded":
+                // Remboursée ne peut pas changer
+                return false;
+
+            default:
+                // Pour les autres statuts, permettre tout changement
+                return true;
+        }
+    }
+
+    /**
+     * Journalise le changement de statut
+     */
+    private void logStatusChange(Integer saleId, String oldStatus, String newStatus) {
+        // Vous pouvez implémenter une journalisation dans une table d'audit
+        // ou simplement logger l'action
+        String logMessage = String.format(
+                "Vente #%d: Statut changé de '%s' à '%s'",
+                saleId, oldStatus, newStatus
+        );
+        System.out.println(logMessage);
+
+        // Exemple d'insertion dans une table d'audit
+        /*
+        try {
+            String sql = "INSERT INTO sale_status_history (sale_id, old_status, new_status, changed_at, changed_by) " +
+                        "VALUES (?, ?, ?, NOW(), ?)";
+            // Exécuter l'insertion...
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la journalisation: " + e.getMessage());
+        }
+        */
+    }
+
+    /**
+     * Vérifie si une vente existe avec un ID et un statut spécifiques
+     * @param saleId ID de la vente
+     * @param status Statut à vérifier
+     * @return true si la vente existe avec ce statut
+     */
+    public Boolean findSalesByIdAndStatus(Integer saleId, String status) {
+        if (saleId == null || status == null) {
+            return false;
+        }
+
+        try {
+            return saleDAO.existsByIdAndStatus(saleId, status);
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la vérification: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Marque une vente comme payée
+     * @param saleId ID de la vente
+     * @return true si réussite
+     */
+    public boolean markAsPaid(Integer saleId) {
+        return updateSaleStatus(saleId, "paid");
+    }
+
+    /**
+     * Annule une vente
+     * @param saleId ID de la vente
+     * @return true si réussite
+     */
+    public boolean cancelSale(Integer saleId) {
+        return updateSaleStatus(saleId, "cancelled");
+    }
+
+    /**
+     * Marque une vente comme remboursée
+     * @param saleId ID de la vente
+     * @return true si réussite
+     */
+    public boolean refundSale(Integer saleId) {
+        return updateSaleStatus(saleId, "refunded");
     }
 }

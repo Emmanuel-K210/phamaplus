@@ -33,7 +33,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form action="${pageContext.request.contextPath}/customers/save" method="post">
+                    <form action="${pageContext.request.contextPath}/customers/add" method="post">
                         <c:if test="${not empty customer}">
                             <input type="hidden" name="id" value="${customer.customerId}">
                         </c:if>

@@ -230,9 +230,9 @@
                     <button class="btn btn-sm btn-modern btn-outline-secondary" onclick="refreshPage()">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
-                    <button class="btn btn-sm btn-modern btn-outline-primary" onclick="printTable()">
+                   <!-- <button class="btn btn-sm btn-modern btn-outline-primary" onclick="printTable()">
                         <i class="bi bi-printer"></i>
-                    </button>
+                    </button>-->
                 </div>
             </div>
         </div>
@@ -309,7 +309,7 @@
                                                 <i class="bi bi-calendar text-muted me-2"></i>
                                                 <c:choose>
                                                     <c:when test="${not empty customer.dateOfBirth}">
-                                                        <fmt:formatDate value="${customer.dateOfBirth}" pattern="dd/MM/yyyy"/>
+                                                        <fmt:formatDate value="${customer.dateOfBirthAsDate}" pattern="dd/MM/yyyy"/>
                                                     </c:when>
                                                     <c:otherwise>
                                                         <span class="text-muted">Non renseigné</span>
@@ -339,7 +339,7 @@
                                                 </span>
                                             <c:if test="${not empty customer.createdAt}">
                                                 <small class="text-muted">
-                                                    Inscrit le <fmt:formatDate value="${customer.createdAt}" pattern="dd/MM/yyyy"/>
+                                                    Inscrit le <fmt:formatDate value="${customer.createdAtAsDate}" pattern="dd/MM/yyyy"/>
                                                 </small>
                                             </c:if>
                                         </div>

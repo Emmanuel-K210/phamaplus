@@ -9,6 +9,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="${pageContext.request.contextPath}/static/css/style.css" rel="stylesheet">
   <style>
     :root {
       --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -398,16 +399,16 @@
         </a>
       </div>
 
-      <div class="navbar-search flex-grow-1 mx-5">
+      <!--<div class="navbar-search flex-grow-1 mx-5">
         <i class="bi bi-search"></i>
         <input type="text" class="form-control" placeholder="Rechercher un produit, client...">
-      </div>
+      </div>-->
 
       <div class="user-menu">
-        <button class="btn btn-link position-relative">
+       <!-- <button class="btn btn-link position-relative">
           <i class="bi bi-bell fs-4 text-muted"></i>
           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
-        </button>
+        </button>-->
         <div class="dropdown">
           <div class="user-avatar" data-bs-toggle="dropdown">
             <c:choose>
@@ -474,18 +475,18 @@
         <span>Fournisseurs</span>
       </a>
     </li>
-    <li class="sidebar-item">
+   <!-- <li class="sidebar-item">
       <a href="${pageContext.request.contextPath}/reports" class="sidebar-link">
         <i class="bi bi-graph-up"></i>
         <span>Rapports</span>
       </a>
-    </li>
-    <li class="sidebar-item mt-4">
+    </li>-->
+   <!-- <li class="sidebar-item mt-4">
       <a href="${pageContext.request.contextPath}/settings" class="sidebar-link">
         <i class="bi bi-gear"></i>
         <span>Paramètres</span>
       </a>
-    </li>
+    </li>-->
   </ul>
 </aside>
 
@@ -497,10 +498,10 @@
 <!-- Footer -->
 <footer class="modern-footer text-center">
   <div class="container">
-    <p class="mb-0 text-muted">© 2024 PharmaPlus - Gestion Pharmaceutique Moderne</p>
+    <p class="mb-0 text-muted">© 2025 oneMaster - Gestion Pharmaceutique Moderne</p>
   </div>
 </footer>
-
+<script src="/${pageContext.request.contextPath}/static/js/app.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   function toggleSidebar() {

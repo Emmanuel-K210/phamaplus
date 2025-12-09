@@ -18,16 +18,30 @@ public interface SaleDAO {
     void insertSaleItem(SaleItem saleItem);
     List<SaleItem> findItemsBySaleId(Integer saleId);
     void deleteSaleItems(Integer saleId);
-
-
     
     // Recherches
+    /**
+     * Vérifie si une vente existe avec un ID donné et un statut spécifique
+     * @param saleId ID de la vente
+     * @param status Statut de paiement
+     * @return true si la vente existe avec ce statut, false sinon
+     */
+    Boolean existsByIdAndStatus(Integer saleId, String status);
+
+    /**
+     * Met à jour le statut d'une vente
+     * @param saleId ID de la vente
+     * @param status Nouveau statut
+     * @return true si mis à jour, false sinon
+     */
+    boolean updateStatus(Integer saleId, String status);
+
+    Sale findSalesByIdAndStatus(Integer saleId, String status);
     List<Sale> findSalesByCustomer(Integer customerId);
     List<Sale> findSalesByDate(LocalDate date);
     List<Sale> findSalesByDateRange(LocalDate start, LocalDate end);
     List<Sale> findSalesByPaymentMethod(String paymentMethod);
     List<Sale> findSalesByPrescription(Integer prescriptionId);
-    
     // Statistiques
     Double getTotalRevenue(LocalDate start, LocalDate end);
     Integer getTotalItemsSold(LocalDate start, LocalDate end);
