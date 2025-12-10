@@ -28,7 +28,7 @@
             border-radius: 30px;
             padding: 3rem;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+            max-width: 700px;
             width: 100%;
             animation: fadeInUp 0.6s ease-out;
         }
@@ -123,73 +123,73 @@
 <body>
 
 <div class="register-card">
-    <div class="logo-section">
-        <div class="logo-icon">
-            <i class="bi bi-person-plus-fill"></i>
+    <div class="col-12">
+        <div class="logo-section">
+            <div class="logo-icon">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+            <h1 class="register-title">Créer un compte</h1>
+            <p class="text-muted">Rejoignez PharmaPlus aujourd'hui</p>
         </div>
-        <h1 class="register-title">Créer un compte</h1>
-        <p class="text-muted">Rejoignez PharmaPlus aujourd'hui</p>
+
+        <c:if test="${not empty error}">
+            <div class="alert alert-danger alert-modern">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    ${error}
+            </div>
+        </c:if>
+
     </div>
+    <div class="col-12">
+        <form action="${pageContext.request.contextPath}/register" method="post" onsubmit="return validateForm()">
+            <div class="row">
+                <div class="mb-3 col-6">
+                    <label for="fullName" class="form-label">
+                        <i class="bi bi-person me-2"></i>Nom complet
+                    </label>
+                    <input type="text" class="form-control" id="fullName" name="fullName"
+                           placeholder="Votre nom complet" required>
+                </div>
 
-    <c:if test="${not empty error}">
-        <div class="alert alert-danger alert-modern">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                ${error}
+                <div class="mb-3 col-6">
+                    <label for="username" class="form-label">
+                        <i class="bi bi-at me-2"></i>Nom d'utilisateur
+                    </label>
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="Choisir un nom d'utilisateur" required>
+                </div>
+
+            </div>
+            <div class="row">
+                <div class="mb-3 col-6">
+                    <label for="password" class="form-label">
+                        <i class="bi bi-lock me-2"></i>Mot de passe
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Créer un mot de passe" required minlength="6">
+                    <div class="form-text">Au moins 6 caractères</div>
+                </div>
+
+                <div class="mb-4 col-6">
+                    <label for="confirmPassword" class="form-label">
+                        <i class="bi bi-lock-fill me-2"></i>Confirmer le mot de passe
+                    </label>
+                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                           placeholder="Confirmer votre mot de passe" required>
+                </div>
+
+            </div>
+            <button type="submit" class="btn btn-register col-12">
+                <i class="bi bi-person-check me-2"></i>Créer mon compte
+            </button>
+        </form>
+        <div class="login-link">
+            <p class="mb-0">Vous avez déjà un compte ?
+                <a href="${pageContext.request.contextPath}/login">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
+                </a>
+            </p>
         </div>
-    </c:if>
-
-    <form action="${pageContext.request.contextPath}/register" method="post" onsubmit="return validateForm()">
-        <div class="mb-3">
-            <label for="fullName" class="form-label">
-                <i class="bi bi-person me-2"></i>Nom complet
-            </label>
-            <input type="text" class="form-control" id="fullName" name="fullName"
-                   placeholder="Votre nom complet" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="username" class="form-label">
-                <i class="bi bi-at me-2"></i>Nom d'utilisateur
-            </label>
-            <input type="text" class="form-control" id="username" name="username"
-                   placeholder="Choisir un nom d'utilisateur" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="password" class="form-label">
-                <i class="bi bi-lock me-2"></i>Mot de passe
-            </label>
-            <input type="password" class="form-control" id="password" name="password"
-                   placeholder="Créer un mot de passe" required minlength="6">
-            <div class="form-text">Au moins 6 caractères</div>
-        </div>
-
-        <div class="mb-4">
-            <label for="confirmPassword" class="form-label">
-                <i class="bi bi-lock-fill me-2"></i>Confirmer le mot de passe
-            </label>
-            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
-                   placeholder="Confirmer votre mot de passe" required>
-        </div>
-
-        <div class="form-check mb-4">
-            <input class="form-check-input" type="checkbox" id="terms" required>
-            <label class="form-check-label" for="terms">
-                J'accepte les <a href="#" class="text-decoration-none">conditions d'utilisation</a>
-            </label>
-        </div>
-
-        <button type="submit" class="btn btn-register">
-            <i class="bi bi-person-check me-2"></i>Créer mon compte
-        </button>
-    </form>
-
-    <div class="login-link">
-        <p class="mb-0">Vous avez déjà un compte ?
-            <a href="${pageContext.request.contextPath}/login">
-                <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
-            </a>
-        </p>
     </div>
 </div>
 
