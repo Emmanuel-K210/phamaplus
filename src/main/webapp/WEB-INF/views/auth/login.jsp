@@ -10,11 +10,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-gradient: linear-gradient(to bottom right,#3b82f6, mediumseagreen);
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(to bottom right,#3b82f6, mediumseagreen);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -56,7 +56,7 @@
             width: 80px;
             height: 80px;
             background: var(--primary-gradient);
-            border-radius: 20px;
+            border-radius: 15px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -128,7 +128,7 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: linear-gradient(to bottom right,#3b82f6, mediumseagreen);
             transform: translate(-50%, -50%);
             transition: width 0.6s, height 0.6s;
         }
@@ -251,11 +251,11 @@
 
 <div class="login-container">
     <div class="login-card">
-        <div class="logo-section">
-            <div class="logo-icon">
-                <i class="bi bi-heart-pulse-fill"></i>
+        <div>
+            <div>
+            <img src="${pageContext.request.contextPath}/assets/logo.png" alt="" />
+            <h1 class="login-title"> C.S.U.S.P PharmaPlus</h1>
             </div>
-            <h1 class="login-title">PharmaPlus</h1>
             <p class="login-subtitle">Connectez-vous à votre compte</p>
         </div>
 
@@ -290,12 +290,7 @@
                 </label>
             </div>
 
-            <div class="form-check mb-4">
-                <input class="form-check-input" type="checkbox" id="remember">
-                <label class="form-check-label" for="remember">
-                    Se souvenir de moi
-                </label>
-            </div>
+
 
             <button type="submit" class="btn btn-login">
                 <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
@@ -303,12 +298,7 @@
 
             <!-- Après le bouton de connexion -->
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                    <label class="form-check-label" for="remember">
-                        Se souvenir de moi
-                    </label>
-                </div>
+
                 <a href="${pageContext.request.contextPath}/forgot-password" class="text-decoration-none">
                     <i class="bi bi-question-circle"></i> Mot de passe oublié ?
                 </a>
