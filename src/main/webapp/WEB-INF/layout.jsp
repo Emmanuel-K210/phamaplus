@@ -457,12 +457,13 @@
         <span>Inventaire</span>
       </a>
     </li>
+
     <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/sales" class="sidebar-link">
-        <i class="bi bi-cart-check"></i>
-        <span>Ventes</span>
+      <a class="sidebar-link" href="${pageContext.request.contextPath}/medical-receipts">
+        <i class="bi bi-file-medical"></i>Reçus Médicaux
       </a>
     </li>
+
     <li class="sidebar-item">
       <a href="${pageContext.request.contextPath}/customers" class="sidebar-link">
         <i class="bi bi-people"></i>
@@ -473,6 +474,13 @@
       <a href="${pageContext.request.contextPath}/suppliers" class="sidebar-link">
         <i class="bi bi-truck"></i>
         <span>Fournisseurs</span>
+      </a>
+    </li>
+    <!-- Module Centre de Santé -->
+    <li class="sidebar-item">
+      <a class="sidebar-link" href="${pageContext.request.contextPath}/medical-receipts/services/manage">
+        <i class="bi bi-tags"></i>
+        <span>Services Médicaux</span>
       </a>
     </li>
    <!-- <li class="sidebar-item">
