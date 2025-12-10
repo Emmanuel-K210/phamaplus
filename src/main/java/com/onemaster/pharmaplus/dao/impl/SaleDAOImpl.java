@@ -4,6 +4,7 @@ import com.onemaster.pharmaplus.config.DatabaseConnection;
 import com.onemaster.pharmaplus.dao.service.SaleDAO;
 import com.onemaster.pharmaplus.model.Sale;
 import com.onemaster.pharmaplus.model.SaleItem;
+import com.onemaster.pharmaplus.utils.JdbcUtil;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -21,21 +22,29 @@ public class SaleDAOImpl implements SaleDAO {
                 "payment_method, payment_status, served_by, notes) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             setSaleParameters(stmt, sale);
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows > 0) {
-                try (ResultSet rs = stmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1); // Retourne le sale_id généré
-                    }
+
+                rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    return rs.getInt(1); // Retourne le sale_id généré
                 }
+
             }
         } catch (SQLException e) {
             System.err.println("Erreur insertion vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return null;
     }
@@ -47,8 +56,12 @@ public class SaleDAOImpl implements SaleDAO {
                 "total_amount = ?, payment_method = ?, payment_status = ?, " +
                 "served_by = ?, notes = ? WHERE sale_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             setSaleParameters(stmt, sale);
             stmt.setInt(11, sale.getSaleId());
 
@@ -56,6 +69,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur mise à jour vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -65,14 +80,18 @@ public class SaleDAOImpl implements SaleDAO {
         deleteSaleItems(saleId);
 
         String sql = "DELETE FROM sales WHERE sale_id = ?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Erreur suppression vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -83,18 +102,25 @@ public class SaleDAOImpl implements SaleDAO {
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE s.sale_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, saleId);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapSaleWithCustomer(rs);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapSaleWithCustomer(rs);
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur recherche vente par ID: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return null;
     }
@@ -107,10 +133,13 @@ public class SaleDAOImpl implements SaleDAO {
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "ORDER BY s.sale_date DESC";
 
-        try (
-                Connection connection = DatabaseConnection.getConnection();
-                Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+        Connection connection = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.createStatement();
+            rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
                 sales.add(mapSaleWithCustomer(rs));
@@ -118,6 +147,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur récupération ventes: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -127,9 +158,12 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "INSERT INTO sale_items (sale_id, product_id, inventory_id, " +
                 "quantity, unit_price, discount, line_total) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        Connection connection = null;
+        PreparedStatement stmt = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, saleItem.getSaleId());
             stmt.setInt(2, saleItem.getProductId());
             stmt.setInt(3, saleItem.getInventoryId());
@@ -142,6 +176,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur insertion item vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -153,19 +189,25 @@ public class SaleDAOImpl implements SaleDAO {
                 "JOIN products p ON si.product_id = p.product_id " +
                 "LEFT JOIN inventory i ON si.inventory_id = i.inventory_id " +
                 "WHERE si.sale_id = ?";
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, saleId);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    items.add(mapSaleItemWithDetails(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                items.add(mapSaleItemWithDetails(rs));
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur récupération items vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return items;
     }
@@ -174,13 +216,19 @@ public class SaleDAOImpl implements SaleDAO {
     public void deleteSaleItems(Integer saleId) {
         String sql = "DELETE FROM sale_items WHERE sale_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, saleId);
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Erreur suppression items vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -191,14 +239,17 @@ public class SaleDAOImpl implements SaleDAO {
         }
 
         String sql = "SELECT COUNT(*) FROM sales WHERE sale_id = ? AND payment_status = ?";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            conn = DatabaseConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
 
             stmt.setInt(1, saleId);
             stmt.setString(2, status);
 
-            ResultSet rs = stmt.executeQuery();
+            rs = stmt.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
@@ -206,6 +257,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur lors de la vérification de la vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
 
         return false;
@@ -218,9 +271,12 @@ public class SaleDAOImpl implements SaleDAO {
         }
 
         String sql = "UPDATE sales SET payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE sale_id = ?";
+        Connection conn = null;
+        PreparedStatement stmt = null;
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try {
+            conn = DatabaseConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
 
             stmt.setString(1, status);
             stmt.setInt(2, saleId);
@@ -232,6 +288,8 @@ public class SaleDAOImpl implements SaleDAO {
             System.err.println("Erreur lors de la mise à jour du statut: " + e.getMessage());
             e.printStackTrace();
             return false;
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -242,15 +300,19 @@ public class SaleDAOImpl implements SaleDAO {
             return null;
         }
 
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
         String sql = "SELECT * FROM sales WHERE sale_id = ? AND payment_status = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
+        try {
+            conn = DatabaseConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
             stmt.setInt(1, saleId);
             stmt.setString(2, status);
 
-            ResultSet rs = stmt.executeQuery();
+            rs = stmt.executeQuery();
             if (rs.next()) {
                 return mapResultSetToSale(rs);
             }
@@ -258,6 +320,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur lors de la recherche de la vente: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
 
         return null;
@@ -291,18 +355,25 @@ public class SaleDAOImpl implements SaleDAO {
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE s.customer_id = ? ORDER BY s.sale_date DESC";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, customerId);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur recherche ventes par client: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -314,18 +385,24 @@ public class SaleDAOImpl implements SaleDAO {
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE DATE(s.sale_date) = ? ORDER BY s.sale_date DESC";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(date));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur recherche ventes par date: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -335,19 +412,25 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT COALESCE(SUM(total_amount), 0) FROM sales " +
                 "WHERE DATE(sale_date) BETWEEN ? AND ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getDouble(1);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble(1);
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur calcul revenu total: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return 0.0;
     }
@@ -359,19 +442,26 @@ public class SaleDAOImpl implements SaleDAO {
                 "JOIN sale_items si ON s.sale_id = si.sale_id " +
                 "WHERE DATE(s.sale_date) BETWEEN ? AND ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur calcul items vendus: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return 0;
     }
@@ -391,24 +481,29 @@ public class SaleDAOImpl implements SaleDAO {
                 "GROUP BY p.product_id, p.product_name " +
                 "ORDER BY total_quantity DESC " +
                 "LIMIT ?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, limit);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Object[] row = new Object[4];
-                    row[0] = rs.getInt("product_id");
-                    row[1] = rs.getString("product_name");
-                    row[2] = rs.getInt("total_quantity");
-                    row[3] = rs.getDouble("total_revenue");
-                    results.add(row);
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                Object[] row = new Object[4];
+                row[0] = rs.getInt("product_id");
+                row[1] = rs.getString("product_name");
+                row[2] = rs.getInt("total_quantity");
+                row[3] = rs.getDouble("total_revenue");
+                results.add(row);
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur top produits: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return results;
     }
@@ -421,10 +516,13 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public Integer getTodayTransactions() {
         String sql = "SELECT COUNT(*) FROM sales WHERE DATE(sale_date) = CURRENT_DATE";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        Connection connection = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.createStatement();
+            rs = stmt.executeQuery(sql);
 
             if (rs.next()) {
                 return rs.getInt(1);
@@ -432,6 +530,8 @@ public class SaleDAOImpl implements SaleDAO {
         } catch (SQLException e) {
             System.err.println("Erreur transactions aujourd'hui: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return 0;
     }
@@ -442,19 +542,24 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "ORDER BY s.sale_date DESC LIMIT ?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, limit);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
+
         } catch (SQLException e) {
             System.err.println("Erreur ventes récentes: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -545,19 +650,25 @@ public class SaleDAOImpl implements SaleDAO {
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
                 "ORDER BY s.sale_date DESC";
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -568,18 +679,23 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE s.payment_method = ? ORDER BY s.sale_date DESC";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setString(1, paymentMethod);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -590,18 +706,22 @@ public class SaleDAOImpl implements SaleDAO {
         String sql = "SELECT s.*, c.first_name, c.last_name FROM sales s " +
                 "LEFT JOIN customers c ON s.customer_id = c.customer_id " +
                 "WHERE s.prescription_id = ? ORDER BY s.sale_date DESC";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, prescriptionId);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    sales.add(mapSaleWithCustomer(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                sales.add(mapSaleWithCustomer(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return sales;
     }
@@ -610,19 +730,24 @@ public class SaleDAOImpl implements SaleDAO {
     public Integer getTotalTransactions(LocalDate start, LocalDate end) {
         String sql = "SELECT COUNT(*) FROM sales " +
                 "WHERE DATE(sale_date) BETWEEN ? AND ?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return 0;
     }
@@ -639,25 +764,31 @@ public class SaleDAOImpl implements SaleDAO {
                 "WHERE DATE(s.sale_date) BETWEEN ? AND ? " +
                 "GROUP BY DATE(sale_date) " +
                 "ORDER BY sale_day";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setDate(1, Date.valueOf(start));
             stmt.setDate(2, Date.valueOf(end));
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Object[] row = new Object[4];
-                    row[0] = rs.getDate("sale_day").toLocalDate();
-                    row[1] = rs.getInt("transactions");
-                    row[2] = rs.getDouble("revenue");
-                    row[3] = rs.getInt("items_sold");
-                    results.add(row);
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                Object[] row = new Object[4];
+                row[0] = rs.getDate("sale_day").toLocalDate();
+                row[1] = rs.getInt("transactions");
+                row[2] = rs.getDouble("revenue");
+                row[3] = rs.getInt("items_sold");
+                results.add(row);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
+        }finally {
+            JdbcUtil.close(rs,stmt);
         }
+
         return results;
     }
 }

@@ -66,7 +66,7 @@ public class SaleItem {
     public void setBatchNumber(String batchNumber) { this.batchNumber = batchNumber; }
     
     // Méthodes
-    private void calculateLineTotal() {
+    public void calculateLineTotal() {
         if (quantity != null && unitPrice != null) {
             this.lineTotal = (quantity * unitPrice) - (discount != null ? discount : 0.0);
         }

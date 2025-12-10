@@ -101,6 +101,7 @@ public class MedicalServiceTypeServlet extends HttpServlet {
         List<String> categories = serviceTypeService.getAllCategories();
         
         request.setAttribute("serviceTypes", serviceTypes);
+        request.setAttribute("pageActive","medical_service");
         request.setAttribute("categories", categories);
         
         request.setAttribute("pageTitle", "Gestion des Services Médicaux");

@@ -440,45 +440,52 @@
 <aside class="modern-sidebar">
   <ul class="sidebar-menu">
     <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/dashboard" class="sidebar-link ${pageTitle eq 'Tableau de Bord' ? 'active' : ''}">
+      <a href="${pageContext.request.contextPath}/dashboard" class="sidebar-link ${pageActive eq 'dashboard' ? 'active' : ''}">
         <i class="bi bi-speedometer2"></i>
         <span>Dashboard</span>
       </a>
     </li>
     <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/products" class="sidebar-link ${pageTitle eq 'Liste Produit' ? 'active' : ''}">
+      <a href="${pageContext.request.contextPath}/products" class="sidebar-link ${pageActive eq 'products' ? 'active' : ''}">
         <i class="bi bi-box-seam"></i>
         <span>Produits</span>
       </a>
     </li>
     <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/inventory" class="sidebar-link ${pageTitle eq 'Liste Inventaire' ? 'active' : ''}">
+      <a href="${pageContext.request.contextPath}/inventory" class="sidebar-link ${pageActive eq 'inventory' ? 'active' : ''}">
         <i class="bi bi-boxes"></i>
         <span>Inventaire</span>
       </a>
     </li>
 
     <li class="sidebar-item">
-      <a class="sidebar-link" href="${pageContext.request.contextPath}/medical-receipts">
-        <i class="bi bi-file-medical"></i>Reçus Médicaux
-      </a>
-    </li>
-
-    <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/customers" class="sidebar-link">
+      <a href="${pageContext.request.contextPath}/customers" class="sidebar-link ${pageActive eq 'customers' ? 'active' : ''}">
         <i class="bi bi-people"></i>
         <span>Clients</span>
       </a>
     </li>
     <li class="sidebar-item">
-      <a href="${pageContext.request.contextPath}/suppliers" class="sidebar-link">
+      <a href="${pageContext.request.contextPath}/suppliers" class="sidebar-link ${pageActive eq 'suppliers' ? 'active' : ''}">
         <i class="bi bi-truck"></i>
         <span>Fournisseurs</span>
       </a>
     </li>
+
+    <li class="sidebar-item">
+      <a class="sidebar-link ${pageActive eq 'sales' ? 'active' : ''}" href="${pageContext.request.contextPath}/sales">
+        <i class="bi bi-cart"></i>Ventes
+      </a>
+    </li>
+
     <!-- Module Centre de Santé -->
     <li class="sidebar-item">
-      <a class="sidebar-link" href="${pageContext.request.contextPath}/medical-receipts/services/manage">
+      <a class="sidebar-link ${pageActive eq 'medical' ? 'active' : ''}" href="${pageContext.request.contextPath}/medical-receipts">
+        <i class="bi bi-file-medical"></i>Reçus Médicaux
+      </a>
+    </li>
+
+    <li class="sidebar-item">
+      <a class="sidebar-link ${pageActive eq 'service_medical' ? 'active' : ''}" href="${pageContext.request.contextPath}/medical-receipts/services/manage">
         <i class="bi bi-tags"></i>
         <span>Services Médicaux</span>
       </a>
@@ -509,7 +516,7 @@
     <p class="mb-0 text-muted">© 2025 oneMaster - Gestion Pharmaceutique Moderne</p>
   </div>
 </footer>
-<script src="/${pageContext.request.contextPath}/static/js/app.js" defer></script>
+<script src="${pageContext.request.contextPath}/static/js/app.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   function toggleSidebar() {

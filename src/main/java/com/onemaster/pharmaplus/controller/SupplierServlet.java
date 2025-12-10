@@ -113,6 +113,7 @@ public class SupplierServlet extends HttpServlet {
             }
             
             request.setAttribute("suppliers", suppliers);
+            request.setAttribute("pageActive","suppliers");
             request.setAttribute("totalSuppliers", totalSuppliers);
             request.setAttribute("activeSuppliers", activeSuppliers);
             request.setAttribute("localSuppliers", localSuppliers);

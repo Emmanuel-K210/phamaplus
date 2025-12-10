@@ -3,33 +3,51 @@ package com.onemaster.pharmaplus.config;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.logging.Logger;
 
 public class DatabaseConnection {
-    // =====================================================
-    // CONFIGURATION DE LA BASE DE DONNÉES
-    // =====================================================
+    private static final Logger logger = Logger.getLogger(DatabaseConnection.class.getName());
+
+    // Configuration
     private static final String URL = "jdbc:postgresql://localhost:5432/pharmaplus";
     private static final String USER = "postgres";
     private static final String PASSWORD = "123";
-
-    // =====================================================
-    // PARAMÈTRES DE CONNEXION
-    // =====================================================
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 1000;
-    private static final int CONNECTION_TIMEOUT = 10; // secondes
+    private static final int CONNECTION_TIMEOUT = 10;
 
-    private static Connection connection = null;
+    // Variable locale par thread pour éviter les conflits
+    private static final ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
+
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+            logger.info("Driver PostgreSQL chargé avec succès");
+        } catch (ClassNotFoundException e) {
+            logger.severe("❌ Driver PostgreSQL non trouvé!");
+            throw new RuntimeException("Driver PostgreSQL non trouvé", e);
+        }
+    }
 
     /**
-     * Obtient une connexion à la base de données
-     * @return Connection object
+     * Obtient une connexion à la base de données (une par thread)
      */
     public static Connection getConnection() {
-        if (connection == null || isConnectionClosed()) {
-            connection = createConnectionWithRetry();
+        Connection conn = threadLocalConnection.get();
+
+        try {
+            if (conn == null || conn.isClosed() || !conn.isValid(2)) {
+                logger.info("Création d'une nouvelle connexion pour le thread: " + Thread.currentThread().getId());
+                conn = createConnectionWithRetry();
+                threadLocalConnection.set(conn);
+            }
+        } catch (SQLException e) {
+            logger.warning("Connexion invalide, création d'une nouvelle: " + e.getMessage());
+            conn = createConnectionWithRetry();
+            threadLocalConnection.set(conn);
         }
-        return connection;
+
+        return conn;
     }
 
     /**
@@ -40,147 +58,153 @@ public class DatabaseConnection {
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                System.out.println("🔌 Tentative de connexion " + attempt + "/" + MAX_RETRIES + " à la base de données...");
+                logger.info("Tentative de connexion " + attempt + "/" + MAX_RETRIES);
 
-                // Charger le driver PostgreSQL
-                Class.forName("org.postgresql.Driver");
-
-                // Établir la connexion avec timeout
                 Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
 
-                // Configurer la connexion
-                conn.setAutoCommit(true);
+                // Configuration importante
+                conn.setAutoCommit(true); // Auto-commit par défaut
+                conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
                 // Tester la connexion
                 if (conn.isValid(CONNECTION_TIMEOUT)) {
-                    System.out.println("✅ Connexion à PostgreSQL établie avec succès!");
-                    System.out.println("   Base: pharmaplus");
-                    System.out.println("   Utilisateur: " + USER);
-
-                    // Afficher des informations sur la base
-                    try (var stmt = conn.createStatement();
-                         var rs = stmt.executeQuery("SELECT version()")) {
-                        if (rs.next()) {
-                            System.out.println("   PostgreSQL: " + rs.getString(1).split(",")[0]);
-                        }
-                    }
-
+                    logger.info("✅ Connexion établie avec succès!");
                     return conn;
                 }
 
-            } catch (ClassNotFoundException e) {
-                System.err.println("❌ Driver PostgreSQL non trouvé!");
-                System.err.println("   Ajoutez-le dans pom.xml: <artifactId>postgresql</artifactId>");
-                break;
-
             } catch (SQLException e) {
                 lastException = e;
-                System.err.println("❌ Échec de la connexion (tentative " + attempt + "): " + e.getMessage());
+                logger.warning("❌ Échec de la connexion (tentative " + attempt + "): " + e.getMessage());
 
                 if (attempt < MAX_RETRIES) {
                     try {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
+                        throw new RuntimeException("Connexion interrompue", ie);
                     }
                 }
             }
         }
 
-        // Si on arrive ici, toutes les tentatives ont échoué
-        System.err.println("💥 Impossible de se connecter à la base de données après " + MAX_RETRIES + " tentatives");
+        logger.severe("💥 Impossible de se connecter après " + MAX_RETRIES + " tentatives");
         if (lastException != null) {
             lastException.printStackTrace();
         }
 
-        System.err.println("\n🔧 DÉPANNAGE:");
-        System.err.println("1. Vérifiez que PostgreSQL est démarré:");
-        System.err.println("   sudo systemctl status postgresql");
-        System.err.println("2. Vérifiez les identifiants dans DatabaseConnection.java");
-        System.err.println("3. Testez la connexion manuellement:");
-        System.err.println("   psql -h localhost -U " + USER + " -d pharmaplus");
-        System.err.println("4. Créez la base si elle n'existe pas:");
-        System.err.println("   psql -U " + USER + " -f database/setup.sql");
-
-        return null;
+        throw new RuntimeException("Erreur de connexion à la base de données");
     }
 
     /**
-     * Vérifie si la connexion est fermée
-     */
-    private static boolean isConnectionClosed() {
-        try {
-            return connection == null || connection.isClosed();
-        } catch (SQLException e) {
-            return true;
-        }
-    }
-
-    /**
-     * Ferme la connexion à la base de données
+     * Ferme la connexion du thread courant
      */
     public static void closeConnection() {
-        if (connection != null) {
+        Connection conn = threadLocalConnection.get();
+        if (conn != null) {
             try {
-                if (!connection.isClosed()) {
-                    connection.close();
-                    System.out.println("🔌 Connexion à la base de données fermée");
+                if (!conn.isClosed()) {
+                    conn.close();
+                    logger.info("Connexion fermée pour le thread: " + Thread.currentThread().getId());
                 }
             } catch (SQLException e) {
-                System.err.println("Erreur lors de la fermeture de la connexion: " + e.getMessage());
+                logger.warning("Erreur lors de la fermeture de la connexion: " + e.getMessage());
             } finally {
-                connection = null;
+                threadLocalConnection.remove(); // Important: retirer du ThreadLocal
             }
         }
     }
 
     /**
-     * Teste la connexion (pour débogage)
+     * Ferme la connexion et retire du ThreadLocal
      */
-    public static boolean testConnection() {
-        try (Connection conn = getConnection()) {
-            if (conn != null && conn.isValid(5)) {
-                System.out.println("✅ Test de connexion réussi");
-                return true;
+    public static void closeConnection(Connection conn) {
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) {
+                    conn.close();
+                    logger.info("Connexion fermée");
+                }
+            } catch (SQLException e) {
+                logger.warning("Erreur lors de la fermeture de la connexion: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("❌ Test de connexion échoué: " + e.getMessage());
+        }
+        threadLocalConnection.remove();
+    }
+
+    /**
+     * Vérifie si la connexion courante est valide
+     */
+    public static boolean isConnectionValid() {
+        Connection conn = threadLocalConnection.get();
+        if (conn != null) {
+            try {
+                return conn.isValid(2);
+            } catch (SQLException e) {
+                return false;
+            }
         }
         return false;
     }
 
     /**
-     * Récupère des informations sur la base
+     * Teste la connexion (méthode utilitaire)
      */
-    public static void printDatabaseInfo() {
-        try (Connection conn = getConnection();
-             var stmt = conn.createStatement()) {
-
-            // Nombre de tables
-            var rs = stmt.executeQuery(
-                "SELECT COUNT(*) FROM information_schema.tables " +
-                "WHERE table_schema = 'public'"
-            );
-            if (rs.next()) {
-                System.out.println("📊 Tables dans la base: " + rs.getInt(1));
-            }
-
-            // Statistiques des principales tables
-            String[] tables = {"products", "inventory", "customers", "sales", "users"};
-            System.out.println("\n📈 Statistiques:");
-            for (String table : tables) {
-                try {
-                    rs = stmt.executeQuery("SELECT COUNT(*) FROM " + table);
-                    if (rs.next()) {
-                        System.out.println(String.format("   %-12s: %6d enregistrements", table, rs.getInt(1)));
-                    }
-                } catch (SQLException e) {
-                    // Table peut ne pas exister
-                }
-            }
-
+    public static boolean testConnection() {
+        try (Connection testConn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            boolean valid = testConn.isValid(5);
+            logger.info("Test de connexion: " + (valid ? "✅ SUCCÈS" : "❌ ÉCHEC"));
+            return valid;
         } catch (SQLException e) {
-            System.err.println("Erreur lors de la récupération des informations: " + e.getMessage());
+            logger.severe("Test de connexion échoué: " + e.getMessage());
+            return false;
         }
+    }
+
+    /**
+     * Ouvre une transaction (désactive auto-commit)
+     */
+    public static void beginTransaction() throws SQLException {
+        Connection conn = getConnection();
+        if (conn.getAutoCommit()) {
+            conn.setAutoCommit(false);
+            logger.fine("Transaction démarrée");
+        }
+    }
+
+    /**
+     * Valide la transaction
+     */
+    public static void commit() throws SQLException {
+        Connection conn = threadLocalConnection.get();
+        if (conn != null && !conn.getAutoCommit()) {
+            conn.commit();
+            conn.setAutoCommit(true); // Rétablir auto-commit
+            logger.fine("Transaction validée");
+        }
+    }
+
+    /**
+     * Annule la transaction
+     */
+    public static void rollback() {
+        Connection conn = threadLocalConnection.get();
+        if (conn != null) {
+            try {
+                if (!conn.getAutoCommit()) {
+                    conn.rollback();
+                    conn.setAutoCommit(true); // Rétablir auto-commit
+                    logger.fine("Transaction annulée");
+                }
+            } catch (SQLException e) {
+                logger.warning("Erreur lors du rollback: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Nettoie les connexions (à appeler à la fin de chaque requête)
+     */
+    public static void cleanup() {
+        closeConnection();
     }
 }

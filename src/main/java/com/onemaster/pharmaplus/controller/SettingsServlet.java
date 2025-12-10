@@ -142,6 +142,7 @@ public class SettingsServlet extends HttpServlet {
                     .collect(Collectors.toList());
 
             // Définir les attributs
+            request.setAttribute("pageActive","setting");
             request.setAttribute("parameters", allParameters);
             request.setAttribute("categories", categories);
             request.setAttribute("pageTitle", "Paramètres de l'application");

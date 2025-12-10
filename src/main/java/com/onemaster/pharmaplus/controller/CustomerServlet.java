@@ -221,6 +221,7 @@ public class CustomerServlet extends HttpServlet {
             request.setAttribute("customersWithAllergies", customersWithAllergies);
             request.setAttribute("averageAge", String.format("%.1f", averageAge));
             request.setAttribute("latestCustomerId", latestCustomerId);
+            request.setAttribute("pageActive","customers");
             request.setAttribute("pageTitle", "Gestion des Clients");
             request.setAttribute("contentPage", "/WEB-INF/views/customers/list.jsp");
 

@@ -241,6 +241,7 @@ public class SaleServlet extends HttpServlet {
             request.setAttribute("date", date);
             request.setAttribute("totalSales", totalSales);
             request.setAttribute("currentPage", page);
+            request.setAttribute("pageActive","sales");
             request.setAttribute("totalPages", totalPages);
             request.setAttribute("pageSize", pageSize);
             request.setAttribute("searchParam", search != null ? search : "");

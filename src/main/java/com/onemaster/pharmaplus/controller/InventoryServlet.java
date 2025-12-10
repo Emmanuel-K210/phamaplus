@@ -284,7 +284,7 @@ public class InventoryServlet extends HttpServlet {
         List<Inventory> expired = inventoryService.getExpiredProducts();
         request.setAttribute("inventoryList", expired);
         request.setAttribute("title", "Produits Expirés");
-
+        request.setAttribute("pageActive","inventory");
         request.setAttribute("pageTitle", "Liste Inventaire");
         request.setAttribute("contentPage", "/WEB-INF/views/inventory/list.jsp");
         request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);

@@ -342,6 +342,7 @@ public class ReportServlet extends HttpServlet {
             }
             
             request.setAttribute("reports", reports);
+            request.setAttribute("pageActive","reports");
             request.setAttribute("reportTypes", getReportTypes());
             request.setAttribute("pageTitle", "Gestion des Rapports");
             request.setAttribute("contentPage", "/WEB-INF/views/reports/list.jsp");

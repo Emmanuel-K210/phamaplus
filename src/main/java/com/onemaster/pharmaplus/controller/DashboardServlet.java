@@ -130,6 +130,7 @@ public class DashboardServlet extends BaseServlet {
                               String viewPath) throws ServletException, IOException {
         
         request.setAttribute("contentPage", viewPath);
+        request.setAttribute("pageActive","dashboard");
         request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
     }
     

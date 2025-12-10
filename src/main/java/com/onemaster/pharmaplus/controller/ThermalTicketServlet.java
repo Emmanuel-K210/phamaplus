@@ -12,6 +12,8 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.onemaster.pharmaplus.dao.impl.SaleDAOImpl;
+import com.onemaster.pharmaplus.dao.service.SaleDAO;
 import com.onemaster.pharmaplus.model.Sale;
 import com.onemaster.pharmaplus.model.SaleItem;
 import jakarta.servlet.ServletException;
@@ -28,7 +30,10 @@ import java.util.List;
 
 @WebServlet("/sales/thermal-ticket")
 public class ThermalTicketServlet extends BaseServlet {
-    
+
+
+    private final SaleDAO saleDAO = new SaleDAOImpl();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -42,13 +47,13 @@ public class ThermalTicketServlet extends BaseServlet {
         }
         
         try {
-            Sale sale = saleService.findById(Integer.parseInt(saleId));
+            Sale sale = saleService.getSaleWithItems(Integer.parseInt(saleId));
             if (sale == null) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Vente non trouvée");
                 return;
             }
             
-            List<SaleItem> items = sale.getItems();
+            List<SaleItem> items = saleDAO.findItemsBySaleId(sale.getSaleId());
 
             // Créez le ticket thermique
             byte[] pdfBytes = generateThermalTicket(sale, items);
@@ -83,7 +88,7 @@ public class ThermalTicketServlet extends BaseServlet {
         Document document = new Document(pdfDoc, pageSize);
 
         // Marges minimales pour ticket thermique
-        document.setMargins(5, 5, 5, 5);
+        document.setMargins(15, 15, 15, 15);
 
         // Police monospace pour alignement parfait
         PdfFont font;
@@ -97,14 +102,20 @@ public class ThermalTicketServlet extends BaseServlet {
         Paragraph header = new Paragraph()
                 .setTextAlignment(TextAlignment.CENTER)
                 .setFont(font)
-                .setFontSize(9);
+                .setFontSize(8);
 
-        header.add(new Text("PHARMA PLUS\n").setBold().setFontSize(11));
-        header.add("123 Ave de la Santé, Abidjan\n");
-        header.add("Tél: +225 01 02 03 04 05\n");
-        header.add("==========================================\n\n");
-        header.add(new Text("TICKET DE VENTE\n").setBold());
-        header.add("==========================================\n");
+        header.add(new Text("MINISTÈRE DE LA SANTÉ ET DE L'HYGIÈNE PUBLIQUE\n")
+                .setBold()
+                .setFontSize(9));
+        header.add(new Text("ET DE LA COUVERTURE MALADIE UNIVERSELLE\n")
+                .setBold()
+                .setFontSize(9));
+        header.add(new Text("CENTRE DE SANTÉ URBAIN SŒURS PASSIONISTES\n")
+                .setBold()
+                .setFontSize(9));
+        header.add("Abadjin-Doumé (route de Dabou km 17, carrefour institut pasteur)\n");
+        header.add("Tel : (+225) 07 12 64 36 66 - 07 15 56 68 01\n");
+        header.add("══════════════════════════════════════════\n\n");
 
         document.add(header);
 
@@ -135,15 +146,16 @@ public class ThermalTicketServlet extends BaseServlet {
             float[] columnWidths = {3, 1, 2, 2}; // Ratio 3:1:2:2
             
             Table table = new Table(UnitValue.createPercentArray(columnWidths))
+                    .setBorder(null)
                     .setFont(font)
                     .setFontSize(7)
                     .setWidth(UnitValue.createPercentValue(100));
 
             // En-têtes
-            table.addHeaderCell(new Cell().add(new Paragraph("Produit")).setBold());
-            table.addHeaderCell(new Cell().add(new Paragraph("Qté")).setBold().setTextAlignment(TextAlignment.CENTER));
-            table.addHeaderCell(new Cell().add(new Paragraph("P.U")).setBold().setTextAlignment(TextAlignment.RIGHT));
-            table.addHeaderCell(new Cell().add(new Paragraph("Total")).setBold().setTextAlignment(TextAlignment.RIGHT));
+            table.addHeaderCell(new Cell().add(new Paragraph("Produit")).setBorder(null).setBold());
+            table.addHeaderCell(new Cell().add(new Paragraph("Qté")).setBorder(null).setBold().setTextAlignment(TextAlignment.CENTER));
+            table.addHeaderCell(new Cell().add(new Paragraph("P.U")).setBorder(null).setBold().setTextAlignment(TextAlignment.RIGHT));
+            table.addHeaderCell(new Cell().add(new Paragraph("Total")).setBorder(null).setBold().setTextAlignment(TextAlignment.RIGHT));
 
             DecimalFormat df = new DecimalFormat("#,##0");
 
@@ -154,12 +166,12 @@ public class ThermalTicketServlet extends BaseServlet {
                     productName = productName.substring(0, 17) + "...";
                 }
 
-                table.addCell(new Cell().add(new Paragraph(productName)));
-                table.addCell(new Cell().add(new Paragraph(String.valueOf(item.getQuantity())))
+                table.addCell(new Cell().add(new Paragraph(productName)).setBorder(null));
+                table.addCell(new Cell().add(new Paragraph(String.valueOf(item.getQuantity()))).setBorder(null)
                         .setTextAlignment(TextAlignment.CENTER));
-                table.addCell(new Cell().add(new Paragraph(df.format(item.getUnitPrice()) + " F"))
+                table.addCell(new Cell().add(new Paragraph(df.format(item.getUnitPrice()) + " F")).setBorder(null)
                         .setTextAlignment(TextAlignment.RIGHT));
-                table.addCell(new Cell().add(new Paragraph(df.format(item.getLineTotal()) + " F"))
+                table.addCell(new Cell().add(new Paragraph(df.format(item.getLineTotal()) + " F")).setBorder(null)
                         .setTextAlignment(TextAlignment.RIGHT));
             }
 
@@ -221,7 +233,6 @@ public class ThermalTicketServlet extends BaseServlet {
 
         footer.add(new Text("MERCI DE VOTRE CONFIANCE !\n").setBold());
         footer.add("Conservez ce reçu précieusement\n");
-        footer.add("www.pharmaplus.ci | contact@pharmaplus.ci\n");
         footer.add(new Text(saleDate + " - #" + sale.getSaleId())
                 .setFontSize(6));
 

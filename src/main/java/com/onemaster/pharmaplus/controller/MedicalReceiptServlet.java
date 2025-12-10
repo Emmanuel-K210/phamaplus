@@ -113,7 +113,7 @@ public class MedicalReceiptServlet extends HttpServlet {
 
         request.setAttribute("receipts", receiptDTOs);
         request.setAttribute("totalReceipts", receipts.size());
-
+        request.setAttribute("pageActive","medical");
         double totalRevenue = receipts.stream()
                 .mapToDouble(MedicalReceipt::getAmount)
                 .sum();

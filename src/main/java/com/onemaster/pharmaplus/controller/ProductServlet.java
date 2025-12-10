@@ -115,6 +115,7 @@ public class ProductServlet extends BaseServlet {
             request.setAttribute("products", products);
             request.setAttribute("totalProducts", totalProducts);
             request.setAttribute("activeProducts", activeProducts);
+            request.setAttribute("pageActive","products");
             request.setAttribute("prescriptionProducts", prescriptionProducts);
             request.setAttribute("totalValue", totalValue);
             request.setAttribute("currentPage", page);

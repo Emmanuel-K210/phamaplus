@@ -2,8 +2,10 @@ package com.onemaster.pharmaplus.service;
 
 import com.onemaster.pharmaplus.dao.impl.InventoryDAOImpl;
 import com.onemaster.pharmaplus.dao.impl.SaleDAOImpl;
+import com.onemaster.pharmaplus.dao.impl.SaleItemDAOImpl;
 import com.onemaster.pharmaplus.dao.service.InventoryDAO;
 import com.onemaster.pharmaplus.dao.service.SaleDAO;
+import com.onemaster.pharmaplus.dao.service.SaleItemDAO;
 import com.onemaster.pharmaplus.model.Inventory;
 import com.onemaster.pharmaplus.model.Sale;
 import com.onemaster.pharmaplus.model.SaleItem;
@@ -16,14 +18,12 @@ public class SaleService {
     
     private final SaleDAO saleDAO;
     private final InventoryDAO inventoryDAO;
-    private final ProductService productService;
-    private final CustomerService customerService;
-    
+    private final SaleItemDAO saleItemDAO;
+
     public SaleService() {
         this.saleDAO = new SaleDAOImpl();
         this.inventoryDAO = new InventoryDAOImpl();
-        this.productService = new ProductService();
-        this.customerService = new CustomerService();
+        this.saleItemDAO = new SaleItemDAOImpl();
     }
     
     // Méthode principale pour créer une vente
