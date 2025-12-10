@@ -1,1 +1,1 @@
-alert("Donnée on été chargé avec succès");
+console.log("Chargée:...................................:-)")
