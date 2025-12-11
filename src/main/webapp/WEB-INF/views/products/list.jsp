@@ -231,7 +231,6 @@
                     <table class="table modern-table mb-0">
                         <thead>
                         <tr>
-                            <th><i class="bi bi-hash me-2"></i>ID</th>
                             <th><i class="bi bi-box me-2"></i>Nom Commercial</th>
                             <th><i class="bi bi-tag me-2"></i>Nom Générique</th>
                             <th><i class="bi bi-building me-2"></i>Fabricant</th>
@@ -258,7 +257,7 @@
                             <c:otherwise>
                                 <c:forEach var="product" items="${products}">
                                     <tr>
-                                        <td><strong>#${product.productId}</strong></td>
+                                       <!-- <td><strong>#${product.productId}</strong></td>-->
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">

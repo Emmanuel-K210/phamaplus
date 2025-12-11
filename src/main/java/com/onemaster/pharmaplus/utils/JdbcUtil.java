@@ -1,87 +1,88 @@
 package com.onemaster.pharmaplus.utils;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import com.onemaster.pharmaplus.config.DatabaseConnection;
+
+import java.sql.*;
 import java.util.logging.Logger;
 
 public class JdbcUtil {
     private static final Logger logger = Logger.getLogger(JdbcUtil.class.getName());
 
     /**
-     * Ferme les ressources JDBC en ordre inverse
+     * Ferme TOUTES les ressources JDBC
      */
-    public static void close(ResultSet rs, Statement stmt, Connection conn) {
-        close(rs);
-        close(stmt);
-        close(conn);
+    public static void closeAll(ResultSet rs, Statement stmt, Connection conn) {
+        closeResultSet(rs);
+        closeStatement(stmt);
+        closeConnection(conn);
     }
 
     public static void close(ResultSet rs, Statement stmt) {
-        close(rs);
-        close(stmt);
+        closeResultSet(rs);
+        closeStatement(stmt);
+        // Note: NE PAS fermer la connexion ici, car elle peut être réutilisée
     }
 
-    public static void close(ResultSet rs) {
+    public static void closeResultSet(ResultSet rs) {
         if (rs != null) {
             try {
                 rs.close();
             } catch (SQLException e) {
-                logger.warning("Erreur lors de la fermeture du ResultSet: " + e.getMessage());
+                logger.warning("Erreur fermeture ResultSet: " + e.getMessage());
             }
         }
     }
 
-    public static void close(Statement stmt) {
+    public static void closeStatement(Statement stmt) {
         if (stmt != null) {
             try {
                 stmt.close();
             } catch (SQLException e) {
-                logger.warning("Erreur lors de la fermeture du Statement: " + e.getMessage());
+                logger.warning("Erreur fermeture Statement: " + e.getMessage());
             }
         }
     }
 
-    public static void close(Connection conn) {
+    public static void closeConnection(Connection conn) {
         if (conn != null) {
             try {
                 if (!conn.isClosed()) {
-                    conn.close();
+                    conn.close(); // Avec HikariCP, retourne au pool
                 }
             } catch (SQLException e) {
-                logger.warning("Erreur lors de la fermeture de la Connection: " + e.getMessage());
+                logger.warning("Erreur fermeture Connection: " + e.getMessage());
             }
         }
     }
 
     /**
-     * Rétablit auto-commit et ferme la connexion
+     * Méthode utilitaire pour exécuter avec try-with-resources
      */
-    public static void safeClose(Connection conn) {
-        if (conn != null) {
-            try {
-                if (!conn.getAutoCommit()) {
-                    conn.setAutoCommit(true);
-                }
-                if (!conn.isClosed()) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                logger.warning("Erreur lors de la fermeture sécurisée: " + e.getMessage());
-            }
-        }
-    }
+    public static <T> T executeQuery(String sql, ResultSetHandler<T> handler, Object... params)
+            throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
 
-    /**
-     * Vérifie si une connexion est valide
-     */
-    public static boolean isValidConnection(Connection conn) {
-        if (conn == null) return false;
         try {
-            return conn.isValid(2);
-        } catch (SQLException e) {
-            return false;
+            conn = DatabaseConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
+
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+
+            rs = stmt.executeQuery();
+            return handler.handle(rs);
+
+        } finally {
+            closeAll(rs, stmt, conn);
         }
+    }
+
+    // Interface pour gérer les ResultSet
+    @FunctionalInterface
+    public interface ResultSetHandler<T> {
+        T handle(ResultSet rs) throws SQLException;
     }
 }

@@ -782,9 +782,9 @@ CREATE TRIGGER update_product_stats_trigger
 -- DONNÉES D'EXEMPLE (OPTIONNEL)
 -- =============================================
 
--- Insérer un utilisateur admin par défaut (mot de passe: admin)
+-- Insérer un utilisateur admin par défaut (mot de passe: oneMaster123@)
 INSERT INTO users (username, password, full_name, role)
-VALUES ('admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'Administrateur', 'ADMIN');
+VALUES ('admin', 'ddce6a449a44f807863cea0eb2ac199ccd2acd0bff7e06bf24f3c21822396a5c', 'Administrateur', 'ADMIN');
 ALTER TABLE sales ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE inventory ADD COLUMN selling_price DECIMAL(10,2);
 -- Insérer des catégories de base
