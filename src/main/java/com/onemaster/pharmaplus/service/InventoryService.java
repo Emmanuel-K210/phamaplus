@@ -234,6 +234,21 @@ public class InventoryService {
         }
     }
 
+    public List<Inventory> getInventoryWithPagination(int page, int pageSize, String search,
+                                                      String category, String status, String stockStatus, String expiryStatus) {
+
+        int offset = (page - 1) * pageSize;
+        return inventoryDAO.getInventoryWithPagination(offset, pageSize, search,
+                category, status, stockStatus, expiryStatus);
+    }
+
+    public long getTotalInventoryCount(String search, String category, String status,
+                                       String stockStatus, String expiryStatus) {
+
+        return inventoryDAO.getTotalInventoryCount(search, category, status,
+                stockStatus, expiryStatus);
+    }
+
     // ============================
     // MÉTHODES UTILITAIRES
     // ============================

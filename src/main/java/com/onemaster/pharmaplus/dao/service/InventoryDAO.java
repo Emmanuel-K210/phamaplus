@@ -12,7 +12,13 @@ public interface InventoryDAO {
     void delete(Integer inventoryId);
     Inventory findById(Integer inventoryId);
     List<Inventory> findAll();
-    
+
+    List<Inventory> getInventoryWithPagination(int offset, int limit, String search,
+                                               String category, String status, String stockStatus, String expiryStatus);
+
+    long getTotalInventoryCount(String search, String category, String status,
+                                String stockStatus, String expiryStatus);
+
     // Recherches
     List<Inventory> findByProductId(Integer productId);
     List<Inventory> findByBatchNumber(String batchNumber);

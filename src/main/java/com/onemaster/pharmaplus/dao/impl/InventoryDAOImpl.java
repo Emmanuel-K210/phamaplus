@@ -3,6 +3,7 @@ package com.onemaster.pharmaplus.dao.impl;
 import com.onemaster.pharmaplus.config.DatabaseConnection;
 import com.onemaster.pharmaplus.dao.service.InventoryDAO;
 import com.onemaster.pharmaplus.model.Inventory;
+import com.onemaster.pharmaplus.utils.JdbcUtil;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -22,19 +23,25 @@ public class InventoryDAOImpl implements InventoryDAO {
                 "expiry_date, purchase_price, selling_price, received_date, location) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             setInventoryParameters(stmt, inventory, false);
             stmt.executeUpdate();
 
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    inventory.setInventoryId(rs.getInt(1));
-                }
+            rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                inventory.setInventoryId(rs.getInt(1));
             }
 
         } catch (SQLException e) {
             handleSQLException("Erreur lors de l'insertion d'inventaire", e);
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
     }
 
@@ -46,12 +53,17 @@ public class InventoryDAOImpl implements InventoryDAO {
                 "location = ?, updated_at = NOW() " +
                 "WHERE inventory_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             setInventoryParameters(stmt, inventory, true);
             stmt.executeUpdate();
         } catch (SQLException e) {
             handleSQLException("Erreur lors de la mise à jour d'inventaire", e);
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -59,8 +71,12 @@ public class InventoryDAOImpl implements InventoryDAO {
     public void delete(Integer inventoryId) {
         String sql = "DELETE FROM inventory WHERE inventory_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, inventoryId);
             int rowsAffected = stmt.executeUpdate();
 
@@ -69,6 +85,8 @@ public class InventoryDAOImpl implements InventoryDAO {
             }
         } catch (SQLException e) {
             handleSQLException("Erreur lors de la suppression d'inventaire", e);
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
@@ -85,17 +103,24 @@ public class InventoryDAOImpl implements InventoryDAO {
                 "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
                 "WHERE i.inventory_id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             stmt.setInt(1, inventoryId);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapInventory(rs);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapInventory(rs);
             }
+
         } catch (SQLException e) {
             handleSQLException("Erreur lors de la recherche d'inventaire par ID", e);
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
         return null;
     }
@@ -107,10 +132,217 @@ public class InventoryDAOImpl implements InventoryDAO {
                 "FROM inventory i " +
                 "JOIN products p ON i.product_id = p.product_id " +
                 "LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id " +
-                "WHERE i.quantity_in_stock > 0 " +
+                "WHERE i.quantity_in_stock >= 0 " +
                 "ORDER BY i.expiry_date, p.product_name";
 
         return findByQuery(sql);
+    }
+
+    // ============================
+// PAGINATION WITH FILTERS
+// ============================
+
+    @Override
+    public List<Inventory> getInventoryWithPagination(int offset, int limit, String search,
+                                                      String category, String status, String stockStatus, String expiryStatus) {
+
+        List<Inventory> inventoryList = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT i.*, p.product_name, p.generic_name, p.barcode, ")
+                .append("c.category_name, s.supplier_name, ")
+                .append("(i.expiry_date < CURRENT_DATE) AS is_expired ")
+                .append("FROM inventory i ")
+                .append("JOIN products p ON i.product_id = p.product_id ")
+                .append("LEFT JOIN categories c ON p.category_id = c.category_id ")
+                .append("LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id ")
+                .append("WHERE 1=1 ");
+
+        List<Object> params = new ArrayList<>();
+
+        // Filtre recherche (produit, batch, fournisseur)
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (LOWER(p.product_name) LIKE LOWER(?) ")
+                    .append("OR LOWER(p.generic_name) LIKE LOWER(?) ")
+                    .append("OR LOWER(i.batch_number) LIKE LOWER(?) ")
+                    .append("OR p.barcode LIKE ? ")
+                    .append("OR LOWER(s.supplier_name) LIKE LOWER(?)) ");
+
+            String searchTerm = "%" + search + "%";
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+        }
+
+        // Filtre catégorie
+        if (category != null && !category.trim().isEmpty()) {
+            sql.append("AND c.category_name = ? ");
+            params.add(category);
+        }
+
+        // Filtre statut du produit (actif/inactif)
+        if (status != null && !status.trim().isEmpty()) {
+            if ("active".equalsIgnoreCase(status)) {
+                sql.append("AND p.is_active = true ");
+            } else if ("inactive".equalsIgnoreCase(status)) {
+                sql.append("AND p.is_active = false ");
+            }
+        }
+
+        // Filtre statut du stock (en stock/rupture)
+        if (stockStatus != null && !stockStatus.trim().isEmpty()) {
+            if ("instock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock > 0 ");
+            } else if ("outofstock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock <= 0 ");
+            } else if ("lowstock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock > 0 AND i.quantity_in_stock <= p.low_stock_threshold ");
+            }
+        }
+
+        // Filtre statut d'expiration
+        if (expiryStatus != null && !expiryStatus.trim().isEmpty()) {
+            switch (expiryStatus.toLowerCase()) {
+                case "expired":
+                    sql.append("AND i.expiry_date < CURRENT_DATE ");
+                    break;
+                case "expiring":
+                    sql.append("AND i.expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' ");
+                    break;
+                case "valid":
+                    sql.append("AND i.expiry_date >= CURRENT_DATE ");
+                    break;
+            }
+        }
+
+        sql.append("ORDER BY i.expiry_date ASC, p.product_name ASC ");
+        sql.append("LIMIT ? OFFSET ?");
+
+        params.add(limit);
+        params.add(offset);
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof String) {
+                    stmt.setString(i + 1, (String) param);
+                } else if (param instanceof Integer) {
+                    stmt.setInt(i + 1, (Integer) param);
+                } else if (param instanceof Boolean) {
+                    stmt.setBoolean(i + 1, (Boolean) param);
+                }
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    inventoryList.add(mapInventory(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            handleSQLException("Erreur lors de la pagination d'inventaire", e);
+            System.err.println("SQL: " + sql.toString());
+        }
+
+        return inventoryList;
+    }
+
+    @Override
+    public long getTotalInventoryCount(String search, String category, String status,
+                                       String stockStatus, String expiryStatus) {
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(*) ")
+                .append("FROM inventory i ")
+                .append("JOIN products p ON i.product_id = p.product_id ")
+                .append("LEFT JOIN categories c ON p.category_id = c.category_id ")
+                .append("LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id ")
+                .append("WHERE 1=1 ");
+
+        List<Object> params = new ArrayList<>();
+
+        // Appliquer les mêmes filtres que la méthode de pagination
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (LOWER(p.product_name) LIKE LOWER(?) ")
+                    .append("OR LOWER(p.generic_name) LIKE LOWER(?) ")
+                    .append("OR LOWER(i.batch_number) LIKE LOWER(?) ")
+                    .append("OR p.barcode LIKE ? ")
+                    .append("OR LOWER(s.supplier_name) LIKE LOWER(?)) ");
+
+            String searchTerm = "%" + search + "%";
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+            params.add(searchTerm);
+        }
+
+        if (category != null && !category.trim().isEmpty()) {
+            sql.append("AND c.category_name = ? ");
+            params.add(category);
+        }
+
+        if (status != null && !status.trim().isEmpty()) {
+            if ("active".equalsIgnoreCase(status)) {
+                sql.append("AND p.is_active = true ");
+            } else if ("inactive".equalsIgnoreCase(status)) {
+                sql.append("AND p.is_active = false ");
+            }
+        }
+
+        if (stockStatus != null && !stockStatus.trim().isEmpty()) {
+            if ("instock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock > 0 ");
+            } else if ("outofstock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock <= 0 ");
+            } else if ("lowstock".equalsIgnoreCase(stockStatus)) {
+                sql.append("AND i.quantity_in_stock > 0 AND i.quantity_in_stock <= p.low_stock_threshold ");
+            }
+        }
+
+        if (expiryStatus != null && !expiryStatus.trim().isEmpty()) {
+            switch (expiryStatus.toLowerCase()) {
+                case "expired":
+                    sql.append("AND i.expiry_date < CURRENT_DATE ");
+                    break;
+                case "expiring":
+                    sql.append("AND i.expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' ");
+                    break;
+                case "valid":
+                    sql.append("AND i.expiry_date >= CURRENT_DATE ");
+                    break;
+            }
+        }
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof String) {
+                    stmt.setString(i + 1, (String) param);
+                } else if (param instanceof Integer) {
+                    stmt.setInt(i + 1, (Integer) param);
+                } else if (param instanceof Boolean) {
+                    stmt.setBoolean(i + 1, (Boolean) param);
+                }
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            handleSQLException("Erreur lors du comptage total d'inventaire", e);
+        }
+
+        return 0;
     }
 
     @Override
@@ -414,31 +646,41 @@ public class InventoryDAOImpl implements InventoryDAO {
     private List<Inventory> findByQuery(String sql, Object... params) {
         List<Inventory> list = new ArrayList<>();
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapInventory(rs));
-                }
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                list.add(mapInventory(rs));
             }
+
         } catch (SQLException e) {
             handleSQLException("Erreur lors de l'exécution de la requête", e);
             System.err.println("Requête SQL en erreur: " + sql);
             for (int i = 0; i < params.length; i++) {
-                System.err.println("Paramètre " + (i+1) + ": " + params[i]);
+                System.err.println("Paramètre " + (i + 1) + ": " + params[i]);
             }
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
 
         return list;
     }
 
     private boolean updateStock(String sql, Object... params) {
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }
@@ -449,23 +691,32 @@ public class InventoryDAOImpl implements InventoryDAO {
         } catch (SQLException e) {
             handleSQLException("Erreur lors de la mise à jour du stock", e);
             return false;
+        } finally {
+            JdbcUtil.close(stmt);
         }
     }
 
     private int getStockSum(String sql, Object... params) {
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            stmt = connection.prepareStatement(sql);
             for (int i = 0; i < params.length; i++) {
                 stmt.setObject(i + 1, params[i]);
             }
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+            rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
             }
+
         } catch (SQLException e) {
             handleSQLException("Erreur lors du calcul du stock", e);
+        } finally {
+            JdbcUtil.close(rs, stmt);
         }
 
         return 0;

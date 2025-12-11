@@ -17,8 +17,10 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
     public void insert(ApplicationParameter parameter) {
         String sql = "INSERT INTO application_parameters (parameter_key, parameter_value, " +
                 "parameter_type, category, description) VALUES (?, ?, ?, ?, ?)";
+
         Connection conn = null;
         PreparedStatement stmt = null;
+
         try {
             conn = DatabaseConnection.getConnection();
             stmt = conn.prepareStatement(sql);
@@ -75,8 +77,8 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
         try {
             conn = DatabaseConnection.getConnection();
             stmt = conn.prepareStatement(sql);
-
             stmt.setString(1, parameterKey);
+
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
                 throw new RuntimeException("Paramètre non trouvé: " + parameterKey);
@@ -117,12 +119,14 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
     public List<ApplicationParameter> findAll() {
         List<ApplicationParameter> parameters = new ArrayList<>();
         String sql = "SELECT * FROM application_parameters ORDER BY category, parameter_key";
+
         Connection conn = null;
-        PreparedStatement stmt = null;
+        Statement stmt = null;
         ResultSet rs = null;
+
         try {
             conn = DatabaseConnection.getConnection();
-            stmt = conn.prepareStatement(sql);
+            stmt = conn.createStatement();
             rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
@@ -150,6 +154,7 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, category);
             rs = stmt.executeQuery();
+
             while (rs.next()) {
                 parameters.add(mapFromResultSet(rs));
             }
@@ -167,12 +172,12 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
         String sql = "SELECT parameter_key, parameter_value FROM application_parameters";
 
         Connection conn = null;
-        PreparedStatement stmt = null;
+        Statement stmt = null;
         ResultSet rs = null;
 
         try {
             conn = DatabaseConnection.getConnection();
-            stmt = conn.prepareStatement(sql);
+            stmt = conn.createStatement();
             rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
@@ -205,7 +210,7 @@ public class ApplicationParameterDAOImpl implements ApplicationParameterDAO {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la vérification du paramètre", e);
-        }finally{
+        } finally {
             JdbcUtil.close(rs, stmt);
         }
         return false;
