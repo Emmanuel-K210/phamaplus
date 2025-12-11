@@ -577,11 +577,18 @@
 <style>
     .stat-card {
         border-radius: 15px;
-        padding: 1.5rem;
+        font-size:1rem;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        padding: 1rem;
         color: white;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        min-height: 120px;
+        max-height: 120px;
+        width: 100%;
+
+
+
     }
 
     .stat-card:hover {
@@ -590,7 +597,7 @@
     }
 
     .stat-icon {
-        font-size: 3rem;
+        font-size: 100%;
         opacity: 0.3;
     }
 

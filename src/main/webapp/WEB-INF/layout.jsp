@@ -12,8 +12,8 @@
   <link href="${pageContext.request.contextPath}/static/css/style.css" rel="stylesheet">
   <style>
     :root {
-      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
+      --success-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --warning-gradient: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
       --danger-gradient: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
       --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);

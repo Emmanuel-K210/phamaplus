@@ -11,11 +11,11 @@
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --success-gradient: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
         }
 
         body {
-            background: var(--primary-gradient);
+            background: var(--success-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -41,7 +41,7 @@
         }
 
         .auth-header {
-            background: var(--primary-gradient);
+            background: var(--success-gradient);
             padding: 2.5rem;
             color: white;
             text-align: center;
@@ -67,7 +67,7 @@
         }
 
         .btn-auth {
-            background: var(--primary-gradient);
+            background: var(--success-gradient);
             border: none;
             color: white;
             padding: 0.8rem 2rem;

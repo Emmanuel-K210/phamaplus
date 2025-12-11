@@ -19,7 +19,7 @@
                     </p>
                 </div>
                 <div>
-                    <a class="btn btn-modern btn-gradient-primary" href="${pageContext.request.contextPath}/sales/new">
+                    <a class="btn btn-modern btn-gradient-success" href="${pageContext.request.contextPath}/sales/new">
                         <i class="bi bi-plus-circle me-2"></i>Nouvelle Vente
                     </a>
                 </div>
@@ -106,7 +106,7 @@
 
         <!-- Valeur Inventaire -->
         <div class="col-xl-3 col-md-6">
-            <div class="stat-card" style="background: var(--warning-gradient);">
+            <div class="stat-card" style="background: var(--warning-gradient)">
                 <div class="position-relative">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>

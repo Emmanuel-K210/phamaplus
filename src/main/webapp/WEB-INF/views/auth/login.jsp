@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         :root {
-            --primary-gradient: linear-gradient(to bottom right,#3b82f6, mediumseagreen);
+            --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
         }
 
         body {
@@ -133,10 +133,7 @@
             transition: width 0.6s, height 0.6s;
         }
 
-        .btn-login:hover::before {
-            width: 400px;
-            height: 400px;
-        }
+
 
         .btn-login:hover {
             transform: translateY(-2px);
@@ -157,7 +154,7 @@
             top: 50%;
             width: 100%;
             height: 1px;
-            background: linear-gradient(to right, transparent, #ddd, transparent);
+
         }
 
         .divider span {
@@ -296,7 +293,7 @@
 
 
 
-            <button type="submit" class="btn btn-login">
+            <button type="submit" class="btn-login">
                 <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
             </button>
 
