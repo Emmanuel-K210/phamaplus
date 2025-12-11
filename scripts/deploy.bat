@@ -132,14 +132,36 @@ echo.
 echo Pour arrêter : Arrêter_PharmaPlus.bat
 ) > "%OUTPUT%\LISEZ_MOI.txt"
 
-:: Créer ZIP
+:: Créer ZIP - Détection automatique du Bureau
 echo Création archive...
-if exist "%USERPROFILE%\Desktop\PharmaPlus_Client.zip" del "%USERPROFILE%\Desktop\PharmaPlus_Client.zip"
-powershell -Command "Compress-Archive -Path '%OUTPUT%\*' -DestinationPath '%USERPROFILE%\Desktop\PharmaPlus_Client.zip' -Force"
 
-echo.
-echo ✅ PACKAGE CRÉÉ !
-echo Emplacement : %USERPROFILE%\Desktop\PharmaPlus_Client.zip
-echo.
-echo Testez en extrayant et lançant Lancer_PharmaPlus.bat
+:: Essayer d'abord le Bureau français
+set "DESKTOP=%USERPROFILE%\Bureau"
+if not exist "%DESKTOP%" (
+    :: Essayer le Bureau anglais
+    set "DESKTOP=%USERPROFILE%\Desktop"
+)
+if not exist "%DESKTOP%" (
+    :: Utiliser le dossier utilisateur comme fallback
+    set "DESKTOP=%USERPROFILE%"
+)
+
+set "ZIP_PATH=%DESKTOP%\PharmaPlus_Client.zip"
+
+echo Destination : %ZIP_PATH%
+if exist "%ZIP_PATH%" del "%ZIP_PATH%"
+powershell -Command "Compress-Archive -Path '%OUTPUT%\*' -DestinationPath '%ZIP_PATH%' -Force"
+
+if exist "%ZIP_PATH%" (
+    echo.
+    echo ✅ PACKAGE CRÉÉ !
+    echo Emplacement : %ZIP_PATH%
+    echo.
+    echo Testez en extrayant et lançant Lancer_PharmaPlus.bat
+) else (
+    echo.
+    echo ❌ Erreur lors de la création du ZIP
+    echo Le package est disponible dans : %OUTPUT%
+    echo.
+)
 pause
