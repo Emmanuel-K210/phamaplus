@@ -25,7 +25,7 @@ import java.util.List;
         "/inventory/lowstock",
         "/inventory/view"
 })
-public class InventoryServlet extends HttpServlet {
+public class InventoryServlet extends BaseServlet {
 
     private InventoryService inventoryService;
     private ProductService productService;
@@ -86,15 +86,75 @@ public class InventoryServlet extends HttpServlet {
         }
     }
 
+
     private void listInventory(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        List<Inventory> inventory = inventoryService.getAllInventory();
-        request.setAttribute("inventoryList", inventory);
-        request.setAttribute("totalItems", inventory.size());
-        request.setAttribute("pageTitle", "Liste Inventaire");
-        request.setAttribute("contentPage", "/WEB-INF/views/inventory/list.jsp");
-        request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+        // Gestion de la pagination
+        int page = 1;
+        int pageSize = 10;
+
+        // Récupération des paramètres de filtrage
+        String search = request.getParameter("search");
+        String category = request.getParameter("category");
+        String status = request.getParameter("status");
+        String stockStatus = request.getParameter("stockStatus");
+        String expiryStatus = request.getParameter("expiryStatus");
+
+        try {
+            if (request.getParameter("page") != null) {
+                page = Integer.parseInt(request.getParameter("page"));
+                if (page < 1) page = 1;
+            }
+        } catch (NumberFormatException e) {
+            logWarning("Paramètre page invalide, utilisation de la valeur par défaut (1)");
+        }
+
+        try {
+            // Récupérer l'inventaire avec pagination
+            List<Inventory> inventory = inventoryService.getInventoryWithPagination(
+                    page, pageSize, search, category, status, stockStatus, expiryStatus);
+
+            // Récupérer le nombre total
+            long totalInventory = inventoryService.getTotalInventoryCount(
+                    search, category, status, stockStatus, expiryStatus);
+
+            int totalPages = (int) Math.ceil((double) totalInventory / pageSize);
+
+            // Calculer les statistiques
+            long expiredItems = inventoryService.getExpiredProductsCount();
+            long lowStockItems = inventoryService.getLowStockCount();
+            double totalInventoryValue = inventoryService.calculateTotalInventoryValue();
+
+            // Passer les attributs à la vue
+            request.setAttribute("inventoryList", inventory);
+            request.setAttribute("totalItems", totalInventory);
+            request.setAttribute("currentPage", page);
+            request.setAttribute("totalPages", totalPages);
+            request.setAttribute("pageSize", pageSize);
+            request.setAttribute("expiredItems", expiredItems);
+            request.setAttribute("lowStockItems", lowStockItems);
+            request.setAttribute("totalInventoryValue", totalInventoryValue);
+            request.setAttribute("pageActive", "inventory");
+            request.setAttribute("pageTitle", "Liste Inventaire");
+            request.setAttribute("contentPage", "/WEB-INF/views/inventory/list.jsp");
+
+            // Passer les paramètres de filtrage pour pré-remplir le formulaire
+            request.setAttribute("searchParam", search);
+            request.setAttribute("categoryParam", category);
+            request.setAttribute("statusParam", status);
+            request.setAttribute("stockStatusParam", stockStatus);
+            request.setAttribute("expiryStatusParam", expiryStatus);
+
+            request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+
+        } catch (Exception e) {
+            logError("Erreur lors de la récupération de l'inventaire", e);
+            request.setAttribute("error", "Une erreur est survenue lors de la récupération de l'inventaire");
+            request.setAttribute("pageTitle", "Erreur");
+            request.setAttribute("contentPage", "/WEB-INF/views/error.jsp");
+            request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);
+        }
     }
 
     private void showAddForm(HttpServletRequest request, HttpServletResponse response)
@@ -284,7 +344,7 @@ public class InventoryServlet extends HttpServlet {
         List<Inventory> expired = inventoryService.getExpiredProducts();
         request.setAttribute("inventoryList", expired);
         request.setAttribute("title", "Produits Expirés");
-        request.setAttribute("pageActive","inventory");
+        request.setAttribute("pageActive", "inventory");
         request.setAttribute("pageTitle", "Liste Inventaire");
         request.setAttribute("contentPage", "/WEB-INF/views/inventory/list.jsp");
         request.getRequestDispatcher("/WEB-INF/layout.jsp").forward(request, response);

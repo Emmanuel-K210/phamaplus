@@ -252,12 +252,12 @@
                             <i class="bi bi-cart-plus me-2"></i>Nouvelle Vente
                         </a>
                     </div>
-                    <div class="col-md-6">
+                    <!--<div class="col-md-6">
                         <a href="${pageContext.request.contextPath}/reports"
                            class="btn btn-modern btn-outline-primary w-100 text-start quick-action">
                             <i class="bi bi-file-earmark-text me-2"></i>Générer Rapport
                         </a>
-                    </div>
+                    </div>-->
                 </div>
 
                 <!-- Revenu mensuel -->
@@ -322,7 +322,7 @@
                                                 </div>
                                             </div>
                                             <div>
-                                                <strong>${product[0]}</strong><br>
+                                                <!--<strong>${product[0]}</strong><br>-->
                                                 <small class="text-muted">${product[1]}</small>
                                             </div>
                                         </div>
