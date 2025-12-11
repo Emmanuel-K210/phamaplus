@@ -50,12 +50,12 @@
         .logo-section {
             text-align: center;
             margin-bottom: 2rem;
+            flex-direction: row;
         }
 
-        .logo-icon {
+        .logo-section img {
             width: 80px;
             height: 80px;
-            background: var(--primary-gradient);
             border-radius: 15px;
             display: inline-flex;
             align-items: center;
@@ -253,9 +253,12 @@
 <div class="login-container">
     <div class="login-card">
         <div>
-            <div>
-                <img src="${pageContext.request.contextPath}/assets/logo.png" alt="" />
-                <h1 class="login-title"> C.S.U.S.P PharmaPlus</h1>
+            <div class="logo-section">
+                <div> <img src="${pageContext.request.contextPath}/static/images/Logo.png" alt="" /></div>
+                <div> <h1 class="login-title"> C.S.U.S.P PharmaPlus</h1></div>
+
+
+
             </div>
             <p class="login-subtitle">Connectez-vous à votre compte</p>
         </div>
