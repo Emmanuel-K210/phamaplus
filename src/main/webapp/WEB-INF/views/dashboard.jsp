@@ -36,14 +36,14 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Ventes Aujourd'hui</p>
-                            <h2 class="mb-0 fcfa-amount">
+                            <h4 class="mb-0 fcfa-amount">
                                 <c:choose>
                                     <c:when test="${not empty todaySummary.revenue}">
                                         <fmt:formatNumber value="${todaySummary.revenue}" pattern="#,##0"/> F CFA
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
-                            </h2>
+                            </h4>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
                                     <c:choose>
@@ -71,14 +71,14 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Produits en Stock</p>
-                            <h2 class="mb-0">
+                            <h4 class="mb-0">
                                 <c:choose>
                                     <c:when test="${not empty totalProducts}">
                                         <c:out value="${totalProducts}"/>
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
-                            </h2>
+                            </h4>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
                                     <c:choose>
@@ -111,14 +111,14 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Valeur Inventaire</p>
-                            <h2 class="mb-0 fcfa-amount">
+                            <h4 class="mb-0 fcfa-amount">
                                 <c:choose>
                                     <c:when test="${not empty inventoryValue}">
                                         <fmt:formatNumber value="${inventoryValue}" pattern="#,##0"/> F CFA
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
-                            </h2>
+                            </h4>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
                                     <i class="bi bi-shield-check me-1"></i>Stock
@@ -140,14 +140,14 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="mb-1 opacity-75">Clients Actifs</p>
-                            <h2 class="mb-0">
+                            <h4 class="mb-0">
                                 <c:choose>
                                     <c:when test="${not empty activeCustomers}">
                                         <c:out value="${activeCustomers}"/>
                                     </c:when>
                                     <c:otherwise>0</c:otherwise>
                                 </c:choose>
-                            </h2>
+                            </h4>
                             <div class="mt-2">
                                 <span class="badge bg-white bg-opacity-25">
                                     <c:choose>
