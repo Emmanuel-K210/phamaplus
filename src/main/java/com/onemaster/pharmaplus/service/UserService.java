@@ -92,14 +92,8 @@ public class UserService {
     public List<User> getActiveUsers() {
         return userDAO.findActiveUsers();
     }
-    public List<User> getDesActiveUsers() {return userDAO.findDesaActiveUsers();}
-
-    public int countAllUser() {return userDAO.countAll();}
-    public int countAdmin(){return userDAO.countByRole("ADMIN");}
-    public int countActiveUser(){return getActiveUsers().size();}
-    public int countDesActiveUser(){return getDesActiveUsers().size();}
+    
     public void deactivateUser(Long userId) {
-
         userDAO.toggleUserStatus(userId, false);
     }
     

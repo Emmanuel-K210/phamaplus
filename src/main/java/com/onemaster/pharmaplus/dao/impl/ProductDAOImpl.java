@@ -3,7 +3,6 @@ package com.onemaster.pharmaplus.dao.impl;
 import com.onemaster.pharmaplus.config.DatabaseConnection;
 import com.onemaster.pharmaplus.dao.service.ProductDAO;
 import com.onemaster.pharmaplus.model.Product;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +16,8 @@ public class ProductDAOImpl implements ProductDAO {
                 "unit_price, selling_price, reorder_level, barcode, is_active) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
             setProductParameters(stmt, product);
             stmt.setBoolean(13, product.getIsActive() != null ? product.getIsActive() : true);
 
@@ -32,9 +29,9 @@ public class ProductDAOImpl implements ProductDAO {
                     }
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de l'insertion du produit: " + e.getMessage(), e);
+            System.err.println("Erreur lors de l'insertion produit: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -46,18 +43,16 @@ public class ProductDAOImpl implements ProductDAO {
                 "reorder_level = ?, barcode = ?, is_active = ?, updated_at = NOW() " +
                 "WHERE product_id = ?";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             setProductParameters(stmt, product);
             stmt.setBoolean(13, product.getIsActive() != null ? product.getIsActive() : true);
             stmt.setInt(14, product.getProductId());
 
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la mise à jour du produit: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la mise à jour produit: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -65,15 +60,13 @@ public class ProductDAOImpl implements ProductDAO {
     public void delete(Integer productId) {
         String sql = "UPDATE products SET is_active = false, updated_at = NOW() WHERE product_id = ?";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, productId);
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la suppression du produit: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la suppression produit: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -83,22 +76,18 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.product_id = ?";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, productId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapProductWithCategory(rs);
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche du produit par ID: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la recherche par ID: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return null;
     }
 
@@ -108,22 +97,18 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.barcode = ? AND p.is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, barcode);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapProductWithCategory(rs);
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche du produit par code-barres: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la recherche par code-barres: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return null;
     }
 
@@ -134,19 +119,17 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.is_active = true ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 products.add(mapProductWithCategory(rs));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement de tous les produits: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la récupération des produits: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -158,10 +141,8 @@ public class ProductDAOImpl implements ProductDAO {
                 "WHERE (LOWER(p.product_name) LIKE LOWER(?) OR LOWER(p.generic_name) LIKE LOWER(?)) " +
                 "AND p.is_active = true ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             String searchTerm = "%" + name + "%";
             stmt.setString(1, searchTerm);
             stmt.setString(2, searchTerm);
@@ -171,11 +152,10 @@ public class ProductDAOImpl implements ProductDAO {
                     products.add(mapProductWithCategory(rs));
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche de produit par nom: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la recherche par nom: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -186,10 +166,8 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.category_id = ? AND p.is_active = true ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, categoryId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -197,11 +175,10 @@ public class ProductDAOImpl implements ProductDAO {
                     products.add(mapProductWithCategory(rs));
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche de produit par catégorie: " + e.getMessage(), e);
+            System.err.println("Erreur lors de la recherche par catégorie: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -212,25 +189,24 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.is_active = true ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 products.add(mapProductWithCategory(rs));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement des produits actifs: " + e.getMessage(), e);
+            System.err.println("Erreur: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
     @Override
     public List<Product> findLowStockProducts() {
         List<Product> products = new ArrayList<>();
+
         String sql = "SELECT p.*, c.category_name FROM products p " +
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.is_active = true AND p.product_id IN ( " +
@@ -240,19 +216,17 @@ public class ProductDAOImpl implements ProductDAO {
                 "    HAVING SUM(i.quantity_in_stock) <= p.reorder_level " +
                 ") ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 products.add(mapProductWithCategory(rs));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement des produits en rupture de stock: " + e.getMessage(), e);
+            System.err.println("Erreur produits en rupture: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -264,19 +238,17 @@ public class ProductDAOImpl implements ProductDAO {
                 "WHERE p.requires_prescription = true AND p.is_active = true " +
                 "ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 products.add(mapProductWithCategory(rs));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement des produits sur ordonnance: " + e.getMessage(), e);
+            System.err.println("Erreur: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -284,19 +256,17 @@ public class ProductDAOImpl implements ProductDAO {
     public int countAll() {
         String sql = "SELECT COUNT(*) FROM products WHERE is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             if (rs.next()) {
                 return rs.getInt(1);
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du comptage des produits: " + e.getMessage(), e);
+            System.err.println("Erreur comptage: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return 0;
     }
 
@@ -304,10 +274,8 @@ public class ProductDAOImpl implements ProductDAO {
     public int countByCategory(Integer categoryId) {
         String sql = "SELECT COUNT(*) FROM products WHERE category_id = ? AND is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, categoryId);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -315,34 +283,28 @@ public class ProductDAOImpl implements ProductDAO {
                     return rs.getInt(1);
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du comptage des produits par catégorie: " + e.getMessage(), e);
+            System.err.println("Erreur comptage par catégorie: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return 0;
     }
 
     @Override
     public void updateStock(Integer productId, Integer quantityChange) {
-        // Note: Cette méthode pourrait être remplacée par un trigger
+        // Cette méthode pourrait être remplacée par un trigger
         String sql = "UPDATE products SET updated_at = NOW() WHERE product_id = ?";
-
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, productId);
             stmt.executeUpdate();
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la mise à jour du stock: " + e.getMessage(), e);
+            System.err.println("Erreur mise à jour stock: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    // ============================
-    // MÉTHODES DE PAGINATION
-    // ============================
+    // ========== NOUVELLES MÉTHODES POUR PAGINATION ==========
 
     public List<Product> getProductsWithPagination(int offset, int limit, String search, String category, String status) {
         List<Product> products = new ArrayList<>();
@@ -382,10 +344,8 @@ public class ProductDAOImpl implements ProductDAO {
         params.add(limit);
         params.add(offset);
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
@@ -402,9 +362,9 @@ public class ProductDAOImpl implements ProductDAO {
                     products.add(mapProductWithCategory(rs));
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la pagination des produits: " + e.getMessage(), e);
+            System.err.println("Erreur pagination produits: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return products;
@@ -442,10 +402,8 @@ public class ProductDAOImpl implements ProductDAO {
             }
         }
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
@@ -462,9 +420,9 @@ public class ProductDAOImpl implements ProductDAO {
                     return rs.getLong(1);
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du comptage des produits: " + e.getMessage(), e);
+            System.err.println("Erreur comptage produits: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return 0;
@@ -473,38 +431,32 @@ public class ProductDAOImpl implements ProductDAO {
     public long getActiveProductsCount() {
         String sql = "SELECT COUNT(*) FROM products WHERE is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             if (rs.next()) {
                 return rs.getLong(1);
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du comptage des produits actifs: " + e.getMessage(), e);
+            System.err.println("Erreur comptage produits actifs: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return 0;
     }
 
     public long getPrescriptionProductsCount() {
         String sql = "SELECT COUNT(*) FROM products WHERE requires_prescription = true AND is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             if (rs.next()) {
                 return rs.getLong(1);
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du comptage des produits sur ordonnance: " + e.getMessage(), e);
+            System.err.println("Erreur comptage produits sur ordonnance: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return 0;
     }
 
@@ -514,7 +466,6 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN inventory i ON p.product_id = i.product_id " +
                 "WHERE p.is_active = true";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
              Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -522,17 +473,12 @@ public class ProductDAOImpl implements ProductDAO {
             if (rs.next()) {
                 return rs.getDouble(1);
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du calcul de la valeur totale de l'inventaire: " + e.getMessage(), e);
+            System.err.println("Erreur calcul valeur inventaire: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return 0.0;
     }
-
-    // ============================
-    // MÉTHODES SUPPLÉMENTAIRES
-    // ============================
 
     public List<Product> getProductsByManufacturer(String manufacturer) {
         List<Product> products = new ArrayList<>();
@@ -540,10 +486,8 @@ public class ProductDAOImpl implements ProductDAO {
                 "LEFT JOIN categories c ON p.category_id = c.category_id " +
                 "WHERE p.manufacturer LIKE ? AND p.is_active = true ORDER BY p.product_name";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
+                PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, "%" + manufacturer + "%");
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -551,11 +495,10 @@ public class ProductDAOImpl implements ProductDAO {
                     products.add(mapProductWithCategory(rs));
                 }
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la recherche de produit par fabricant: " + e.getMessage(), e);
+            System.err.println("Erreur recherche par fabricant: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return products;
     }
 
@@ -563,19 +506,16 @@ public class ProductDAOImpl implements ProductDAO {
         List<String> manufacturers = new ArrayList<>();
         String sql = "SELECT DISTINCT manufacturer FROM products WHERE manufacturer IS NOT NULL AND manufacturer != '' ORDER BY manufacturer";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 manufacturers.add(rs.getString("manufacturer"));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement des fabricants: " + e.getMessage(), e);
+            System.err.println("Erreur liste fabricants: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return manufacturers;
     }
 
@@ -583,36 +523,29 @@ public class ProductDAOImpl implements ProductDAO {
         List<String> forms = new ArrayList<>();
         String sql = "SELECT DISTINCT dosage_form FROM products WHERE dosage_form IS NOT NULL AND dosage_form != '' ORDER BY dosage_form";
 
-        // ✅ CORRECT: try-with-resources
         try (Connection connection = DatabaseConnection.getConnection();
-             Statement stmt = connection.createStatement();
+                Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 forms.add(rs.getString("dosage_form"));
             }
-
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors du chargement des formes galéniques: " + e.getMessage(), e);
+            System.err.println("Erreur liste formes galéniques: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return forms;
     }
 
-    // ============================
-    // MÉTHODES UTILITAIRES
-    // ============================
+    // ========== HELPER METHODS ==========
 
     private void setProductParameters(PreparedStatement stmt, Product product) throws SQLException {
         stmt.setString(1, product.getProductName());
         stmt.setString(2, product.getGenericName());
-
         if (product.getCategoryId() != null) {
             stmt.setInt(3, product.getCategoryId());
         } else {
             stmt.setNull(3, Types.INTEGER);
         }
-
         stmt.setString(4, product.getManufacturer());
         stmt.setString(5, product.getDosageForm());
         stmt.setString(6, product.getStrength());
@@ -626,7 +559,6 @@ public class ProductDAOImpl implements ProductDAO {
 
     private Product mapProductWithCategory(ResultSet rs) throws SQLException {
         Product product = new Product();
-
         product.setProductId(rs.getInt("product_id"));
         product.setProductName(rs.getString("product_name"));
         product.setGenericName(rs.getString("generic_name"));
@@ -641,7 +573,6 @@ public class ProductDAOImpl implements ProductDAO {
         product.setReorderLevel(rs.getInt("reorder_level"));
         product.setBarcode(rs.getString("barcode"));
         product.setIsActive(rs.getBoolean("is_active"));
-
         product.setCreatedAt(rs.getTimestamp("created_at") != null ?
                 rs.getTimestamp("created_at").toLocalDateTime() : null);
         product.setUpdatedAt(rs.getTimestamp("updated_at") != null ?

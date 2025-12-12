@@ -5,10 +5,6 @@ import com.onemaster.pharmaplus.model.Customer;
 import java.util.List;
 
 public interface CustomerDAO {
-    List<Customer> getCustomersWithEmail();
-
-    List<Customer> getCustomersWithAllergies();
-
     void insert(Customer customer);
     void update(Customer customer);
     void delete(Integer customerId);

@@ -54,7 +54,7 @@ public class CustomerService {
     }
     
     public List<Customer> getCustomersWithAllergies() {
-        return customerDAO.getCustomersWithAllergies();
+        return customerDAO.findCustomersWithAllergies();
     }
     
     public List<Customer> getCustomersWithPrescriptions() {

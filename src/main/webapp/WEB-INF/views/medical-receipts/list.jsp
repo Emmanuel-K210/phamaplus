@@ -22,11 +22,13 @@
                 Gérez et suivez tous vos reçus médicaux en un seul endroit
             </p>
         </div>
-        <a href="${pageContext.request.contextPath}/medical-receipts/new"
-           class="btn btn-primary d-flex align-items-center">
-            <i class="bi bi-plus-lg me-2"></i>
-            <span>Nouveau Reçu</span>
-        </a>
+            <div class="col-md-4 text-end">
+            <a href="${pageContext.request.contextPath}/medical-receipts/new"
+               class="btn btn-modern btn-gradient-primary px-4 py-2">
+                <i class="bi bi-plus-lg me-2"></i>
+                <span>Nouveau Reçu</span>
+            </a>
+            </div>
     </div>
 
     <!-- Messages de succès/erreur -->
@@ -162,7 +164,7 @@
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <div class="d-flex gap-2 w-100">
-                        <button type="submit" class="btn btn-primary flex-grow-1">
+                        <button type="submit" class="btn btn-gradient-primary flex-grow-1">
                             <i class="bi bi-search me-1"></i> Appliquer
                         </button>
                         <a href="${pageContext.request.contextPath}/medical-receipts"
@@ -310,10 +312,13 @@
                         <p class="text-muted mb-4">
                             Commencez par créer votre premier reçu médical
                         </p>
+
+                        <div class="col-md-4 text-end">
                         <a href="${pageContext.request.contextPath}/medical-receipts/new"
-                           class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>Créer un reçu
+                           class="btn btn-modern btn-gradient-primary px-4 py-2">
+                            <i class="bi bi-person-plus-fill me-2"></i>Créer un reçu
                         </a>
+                        </div>
                     </div>
                 </c:if>
             </div>

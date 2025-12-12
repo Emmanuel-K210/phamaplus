@@ -18,7 +18,7 @@ public interface UserDAO {
     // Recherches
     List<User> findByRole(String role);
     List<User> findActiveUsers();
-    List<User> findDesaActiveUsers();
+    
     // Statistiques
     int countAll();
     int countByRole(String role);

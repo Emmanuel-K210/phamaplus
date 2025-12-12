@@ -237,9 +237,9 @@
             </div>
         </div>
 
-        <div class="card-body p-0">
+        <div class="modern-card p-0">
             <div class="table-responsive">
-                <table class="modern-table">
+                <table class="table modern-table mb-0">
                     <thead>
                     <tr>
                         <th class="ps-4">CLIENT</th>

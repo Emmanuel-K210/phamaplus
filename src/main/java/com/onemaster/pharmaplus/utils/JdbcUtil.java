@@ -1,88 +1,87 @@
 package com.onemaster.pharmaplus.utils;
 
-import com.onemaster.pharmaplus.config.DatabaseConnection;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Logger;
 
 public class JdbcUtil {
     private static final Logger logger = Logger.getLogger(JdbcUtil.class.getName());
 
     /**
-     * Ferme TOUTES les ressources JDBC
+     * Ferme les ressources JDBC en ordre inverse
      */
-    public static void closeAll(ResultSet rs, Statement stmt, Connection conn) {
-        closeResultSet(rs);
-        closeStatement(stmt);
-        closeConnection(conn);
+    public static void close(ResultSet rs, Statement stmt, Connection conn) {
+        close(rs);
+        close(stmt);
+        close(conn);
     }
 
     public static void close(ResultSet rs, Statement stmt) {
-        closeResultSet(rs);
-        closeStatement(stmt);
-        // Note: NE PAS fermer la connexion ici, car elle peut être réutilisée
+        close(rs);
+        close(stmt);
     }
 
-    public static void closeResultSet(ResultSet rs) {
+    public static void close(ResultSet rs) {
         if (rs != null) {
             try {
                 rs.close();
             } catch (SQLException e) {
-                logger.warning("Erreur fermeture ResultSet: " + e.getMessage());
+                logger.warning("Erreur lors de la fermeture du ResultSet: " + e.getMessage());
             }
         }
     }
 
-    public static void closeStatement(Statement stmt) {
+    public static void close(Statement stmt) {
         if (stmt != null) {
             try {
                 stmt.close();
             } catch (SQLException e) {
-                logger.warning("Erreur fermeture Statement: " + e.getMessage());
+                logger.warning("Erreur lors de la fermeture du Statement: " + e.getMessage());
             }
         }
     }
 
-    public static void closeConnection(Connection conn) {
+    public static void close(Connection conn) {
         if (conn != null) {
             try {
                 if (!conn.isClosed()) {
-                    conn.close(); // Avec HikariCP, retourne au pool
+                    conn.close();
                 }
             } catch (SQLException e) {
-                logger.warning("Erreur fermeture Connection: " + e.getMessage());
+                logger.warning("Erreur lors de la fermeture de la Connection: " + e.getMessage());
             }
         }
     }
 
     /**
-     * Méthode utilitaire pour exécuter avec try-with-resources
+     * Rétablit auto-commit et ferme la connexion
      */
-    public static <T> T executeQuery(String sql, ResultSetHandler<T> handler, Object... params)
-            throws SQLException {
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-
-        try {
-            conn = DatabaseConnection.getConnection();
-            stmt = conn.prepareStatement(sql);
-
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
+    public static void safeClose(Connection conn) {
+        if (conn != null) {
+            try {
+                if (!conn.getAutoCommit()) {
+                    conn.setAutoCommit(true);
+                }
+                if (!conn.isClosed()) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                logger.warning("Erreur lors de la fermeture sécurisée: " + e.getMessage());
             }
-
-            rs = stmt.executeQuery();
-            return handler.handle(rs);
-
-        } finally {
-            closeAll(rs, stmt, conn);
         }
     }
 
-    // Interface pour gérer les ResultSet
-    @FunctionalInterface
-    public interface ResultSetHandler<T> {
-        T handle(ResultSet rs) throws SQLException;
+    /**
+     * Vérifie si une connexion est valide
+     */
+    public static boolean isValidConnection(Connection conn) {
+        if (conn == null) return false;
+        try {
+            return conn.isValid(2);
+        } catch (SQLException e) {
+            return false;
+        }
     }
 }

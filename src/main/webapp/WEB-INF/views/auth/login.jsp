@@ -298,25 +298,25 @@
             </button>
 
             <!-- Après le bouton de connexion -->
-           <!-- <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="d-flex justify-content-between align-items-center mt-3">
 
                 <a href="${pageContext.request.contextPath}/forgot-password" class="text-decoration-none">
                     <i class="bi bi-question-circle"></i> Mot de passe oublié ?
                 </a>
-            </div>-->
+            </div>
         </form>
 
-        <!--<div class="divider">
+        <div class="divider">
             <span>Ou</span>
-        </div>-->
+        </div>
 
-       <!-- <div class="register-link">
+        <div class="register-link">
             <p class="mb-0">Vous n'avez pas de compte ?
                 <a href="${pageContext.request.contextPath}/register">
                     Créer un compte <i class="bi bi-arrow-right"></i>
                 </a>
             </p>
-        </div>-->
+        </div>
     </div>
 </div>
 <script src="${pageContext.request.contextPath}/static/js/app.js"></script>

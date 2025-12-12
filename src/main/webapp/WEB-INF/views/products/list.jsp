@@ -230,17 +230,6 @@
                 <div class="table-responsive">
                     <table class="table modern-table mb-0">
                         <thead>
-
-                        <tr>
-                            <th><i class="bi bi-box me-2"></i>Nom Commercial</th>
-                            <th><i class="bi bi-tag me-2"></i>Nom Générique</th>
-                            <th><i class="bi bi-building me-2"></i>Fabricant</th>
-                            <th><i class="bi bi-capsule me-2"></i>Forme</th>
-                            <th><i class="bi bi-cash-stack me-2"></i>Prix</th>
-                            <th><i class="bi bi-clipboard-check me-2"></i>Ordonnance</th>
-                            <th><i class="bi bi-toggle-on me-2"></i>Statut</th>
-                            <th class="text-center"><i class="bi bi-gear me-2"></i>Actions</th>
-                        </tr>
                             <tr style="height: 60px;">
 
                                 <th style="padding: 1.5rem 1rem;"><i class="bi bi-box me-2" ></i>Nom Commercial</th>
@@ -268,6 +257,7 @@
                             <c:otherwise>
                                 <c:forEach var="product" items="${products}">
                                     <tr>
+
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">

@@ -420,7 +420,7 @@
 
 <style>
     .modern-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
         border-radius: 0 0 20px 20px;
     }
 

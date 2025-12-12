@@ -89,9 +89,11 @@
     }
 
     .user-avatar {
+      border-radius: 50%;
+      font-size: 3rem;
       width: 45px;
       height: 45px;
-      border-radius: 50%;
+      margin: 10px;
       background: var(--primary-gradient);
       display: flex;
       align-items: center;
@@ -445,24 +447,18 @@
         <span>Dashboard</span>
       </a>
     </li>
-    <c:if test="${sessionScope.role eq 'ADMIN' or sessionScope.role eq 'PHARMACIST'}">
-      <li class="sidebar-item">
-        <a href="${pageContext.request.contextPath}/products" class="sidebar-link ${pageActive eq 'products' ? 'active' : ''}">
-          <i class="bi bi-box-seam"></i>
-          <span>Produits</span>
-        </a>
-      </li>
-    </c:if>
-
-    <!-- Inventaire (Admin et Pharmacien seulement) -->
-    <c:if test="${sessionScope.role eq 'ADMIN' or sessionScope.role eq 'PHARMACIST'}">
-      <li class="sidebar-item">
-        <a href="${pageContext.request.contextPath}/inventory" class="sidebar-link ${pageActive eq 'inventory' ? 'active' : ''}">
-          <i class="bi bi-boxes"></i>
-          <span>Inventaire</span>
-        </a>
-      </li>
-    </c:if>
+    <li class="sidebar-item">
+      <a href="${pageContext.request.contextPath}/products" class="sidebar-link ${pageActive eq 'products' ? 'active' : ''}">
+        <i class="bi bi-box-seam"></i>
+        <span>Produits</span>
+      </a>
+    </li>
+    <li class="sidebar-item">
+      <a href="${pageContext.request.contextPath}/inventory" class="sidebar-link ${pageActive eq 'inventory' ? 'active' : ''}">
+        <i class="bi bi-boxes"></i>
+        <span>Inventaire</span>
+      </a>
+    </li>
 
     <li class="sidebar-item">
       <a href="${pageContext.request.contextPath}/customers" class="sidebar-link ${pageActive eq 'customers' ? 'active' : ''}">
@@ -470,15 +466,12 @@
         <span>Clients</span>
       </a>
     </li>
-
-    <c:if test="${sessionScope.role eq 'ADMIN' or sessionScope.role eq 'PHARMACIST'}">
-      <li class="sidebar-item">
-        <a href="${pageContext.request.contextPath}/suppliers" class="sidebar-link ${pageActive eq 'suppliers' ? 'active' : ''}">
-          <i class="bi bi-truck"></i>
-          <span>Fournisseurs</span>
-        </a>
-      </li>
-    </c:if>
+    <li class="sidebar-item">
+      <a href="${pageContext.request.contextPath}/suppliers" class="sidebar-link ${pageActive eq 'suppliers' ? 'active' : ''}">
+        <i class="bi bi-truck"></i>
+        <span>Fournisseurs</span>
+      </a>
+    </li>
 
     <li class="sidebar-item">
       <a class="sidebar-link ${pageActive eq 'sales' ? 'active' : ''}" href="${pageContext.request.contextPath}/sales">
@@ -499,17 +492,6 @@
         <span>Services Médicaux</span>
       </a>
     </li>
-
-    <c:if test="${sessionScope.role eq 'ADMIN'}">
-      <li class="sidebar-item">
-        <a href="${pageContext.request.contextPath}/users"
-           class="sidebar-link ${pageActive eq 'users' ? 'active' : ''}">
-          <i class="bi bi-people"></i>
-          <span>Gestion Utilisateurs</span>
-        </a>
-      </li>
-    </c:if>
-
    <!-- <li class="sidebar-item">
       <a href="${pageContext.request.contextPath}/reports" class="sidebar-link">
         <i class="bi bi-graph-up"></i>
