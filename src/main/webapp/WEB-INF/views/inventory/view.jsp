@@ -274,20 +274,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Notes -->
-                        <c:if test="${not empty inventory.notes}">
-                            <div class="col-12">
-                                <h6 class="text-uppercase text-muted mb-3">
-                                    <i class="bi bi-journal-text me-2"></i>Notes
-                                </h6>
-                                <div class="modern-card bg-light">
-                                    <div class="p-3">
-                                        <p class="mb-0">${inventory.notes}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </c:if>
                     </div>
                 </div>
             </div>
