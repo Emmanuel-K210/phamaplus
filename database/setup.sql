@@ -782,9 +782,19 @@ CREATE TRIGGER update_product_stats_trigger
 -- DONNÉES D'EXEMPLE (OPTIONNEL)
 -- =============================================
 
--- Insérer un utilisateur admin par défaut (mot de passe: oneMaster123@)
+-- Insérer un utilisateur nous même super_admin par défaut (mot de passe: oneMaster123@)
 INSERT INTO users (username, password, full_name, role)
-VALUES ('admin', 'ddce6a449a44f807863cea0eb2ac199ccd2acd0bff7e06bf24f3c21822396a5c', 'Administrateur', 'ADMIN');
+VALUES ('oneMaster', 'ddce6a449a44f807863cea0eb2ac199ccd2acd0bff7e06bf24f3c21822396a5c', 'Administrateur', 'ADMIN');
+-- =========================================
+    --IDENTIFIANT
+-- username : admin => M2P : admin123
+-- username : caissier => M2P : cash123
+-- username : pharmacien => M2P : pharma123
+-- ==========================================
+INSERT INTO users (username, password, full_name, role, active) VALUES
+                                                                    ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrateur', 'ADMIN', 1),
+                                                                    ('pharmacien', '1c7d7f2a7668a1de0ea8f04a0ce6ff072e14781b052c51ee506a41b05d28b5cb', 'Dr. Jean Dupont', 'PHARMACIST', 1),
+                                                                    ('caissier', 'c246650737293ddc18fc357393db78d1ecc9d1fd1af95469115e4a29f983359a', 'Marie Martin', 'CASHIER', 1);
 ALTER TABLE sales ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE inventory ADD COLUMN selling_price DECIMAL(10,2);
 -- Insérer des catégories de base

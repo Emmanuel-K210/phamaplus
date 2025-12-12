@@ -3,13 +3,17 @@ package com.onemaster.pharmaplus.dao.impl;
 import com.onemaster.pharmaplus.config.DatabaseConnection;
 import com.onemaster.pharmaplus.dao.service.UserDAO;
 import com.onemaster.pharmaplus.model.User;
-import com.onemaster.pharmaplus.utils.JdbcUtil;
+
+
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class UserDAOImpl implements UserDAO {
+
+    private static final Logger log = Logger.getLogger(UserDAOImpl.class.getName());
 
     @Override
     public void insert(User user) {
@@ -54,7 +58,7 @@ public class UserDAOImpl implements UserDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     String storedHash = rs.getString("password");
-
+                log.info("Password hashé :"+hashPassword(password) + "Mot de passe stocké :"+storedHash);
                     if (storedHash.equals(hashPassword(password))) {
                         User user = mapUser(rs);
                         updateLastLogin(user.getId());
@@ -283,6 +287,27 @@ public class UserDAOImpl implements UserDAO {
             e.printStackTrace();
         }
         return users;
+    }
+
+    @Override
+    public List<User> findDesaActiveUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE active = FALSE ORDER BY username";
+
+        // ✅ CORRECT: try-with-resources
+        try (Connection connection = DatabaseConnection.getConnection();
+             Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                users.add(mapUser(rs));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return users;
+
     }
 
     @Override

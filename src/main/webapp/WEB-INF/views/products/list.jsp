@@ -230,7 +230,7 @@
                 <div class="table-responsive">
                     <table class="table modern-table mb-0">
                         <thead>
-<<<<<<< HEAD
+
                         <tr>
                             <th><i class="bi bi-box me-2"></i>Nom Commercial</th>
                             <th><i class="bi bi-tag me-2"></i>Nom Générique</th>
@@ -241,7 +241,6 @@
                             <th><i class="bi bi-toggle-on me-2"></i>Statut</th>
                             <th class="text-center"><i class="bi bi-gear me-2"></i>Actions</th>
                         </tr>
-=======
                             <tr style="height: 60px;">
 
                                 <th style="padding: 1.5rem 1rem;"><i class="bi bi-box me-2" ></i>Nom Commercial</th>
@@ -252,7 +251,6 @@
                                 <th style="padding: 1.5rem 1rem;"><i class="bi bi-toggle-on me-2"></i>Statut</th>
                                 <th style="padding: 1.5rem 1rem;"><i class="bi bi-gear me-2"></i>Actions</th>
                             </tr>
->>>>>>> 11d7f75d6e8be447d592f0c5df5b4ebe09a28aed
                         </thead>
                         <tbody>
                         <c:choose>
@@ -270,11 +268,6 @@
                             <c:otherwise>
                                 <c:forEach var="product" items="${products}">
                                     <tr>
-<<<<<<< HEAD
-                                       <!-- <td><strong>#${product.productId}</strong></td>-->
-=======
-
->>>>>>> 11d7f75d6e8be447d592f0c5df5b4ebe09a28aed
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">

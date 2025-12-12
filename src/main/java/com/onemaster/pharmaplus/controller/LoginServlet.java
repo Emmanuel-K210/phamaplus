@@ -153,6 +153,7 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("username", user.getUsername());
             session.setAttribute("role", user.getRole());
             session.setAttribute("fullName", user.getFullName());
+            session.setAttribute("isAdmin", "ADMIN".equals(user.getRole()));
             
             response.sendRedirect(request.getContextPath() + "/dashboard?success=Compte+créé+avec+succès");
             
@@ -200,6 +201,8 @@ public class LoginServlet extends HttpServlet {
             // Mettre à jour la session
             session.setAttribute("user", user);
             session.setAttribute("fullName", user.getFullName());
+            session.setAttribute("userRole", user.getRole());
+            session.setAttribute("isAdmin", "ADMIN".equals(user.getRole()));
             
             response.sendRedirect(request.getContextPath() + "/profile?success=Profil+mis+à+jour");
             
