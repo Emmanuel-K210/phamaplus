@@ -163,6 +163,8 @@ public class AuthenticationFilter implements Filter {
         return "ADMIN".equalsIgnoreCase(role) ||
                 "USER".equalsIgnoreCase(role) ||
                 "PHARMACIST".equalsIgnoreCase(role) ||
+                "MANAGER".equalsIgnoreCase(role)||
+                "CASHIER".equalsIgnoreCase(role)||
                 "ASSISTANT".equalsIgnoreCase(role);
     }
 

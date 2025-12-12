@@ -6,10 +6,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><c:out value="${pageTitle}"/> - PharmaPlus</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="${pageContext.request.contextPath}/static/css/style.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/static/icons/bootstrap-icons-1.13.1/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root {
       --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
@@ -537,7 +536,7 @@
   </div>
 </footer>
 <script src="${pageContext.request.contextPath}/static/js/app.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js" defer></script>
 <script>
   function toggleSidebar() {
     document.querySelector('.modern-sidebar').classList.toggle('show');
