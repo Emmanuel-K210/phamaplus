@@ -89,9 +89,11 @@
     }
 
     .user-avatar {
+      border-radius: 50%;
+      font-size: 3rem;
       width: 45px;
       height: 45px;
-      border-radius: 50%;
+      margin: 10px;
       background: var(--primary-gradient);
       display: flex;
       align-items: center;

@@ -29,7 +29,7 @@
         <!-- Carte de profil -->
         <div class="col-lg-4">
             <div class="modern-card p-4 text-center">
-                <div class="user-avatar mx-auto mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
+                <div class="user-avatar mx-auto mb-3" style="">
                     ${user.fullName.substring(0,1)}
                 </div>
                 <h3 class="mb-1">${user.fullName}</h3>
