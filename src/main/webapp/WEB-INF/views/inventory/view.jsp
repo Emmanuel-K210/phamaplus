@@ -411,7 +411,7 @@
     }
 
     .btn-gradient-success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
         border: none;
         color: white;
     }
