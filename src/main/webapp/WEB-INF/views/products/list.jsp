@@ -260,9 +260,6 @@
 
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                                    <i class="bi bi-capsule text-primary"></i>
-                                                </div>
                                                 <div>
                                                     <strong>${product.productName}</strong>
                                                     <c:if test="${not empty product.barcode}">
