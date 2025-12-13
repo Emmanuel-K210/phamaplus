@@ -184,11 +184,11 @@ public class SaleService {
         double afterDiscount = subtotal - discount;
         
         // Calculer la taxe (simplifié - 20% par défaut)
-        double taxRate = 0.20; // 20% TVA
-        double tax = afterDiscount * taxRate;
+        //double taxRate = 0.20; // 20% TVA
+        //double tax = afterDiscount * taxRate;
         
-        sale.setTaxAmount(tax);
-        sale.setTotalAmount(afterDiscount + tax);
+        //sale.setTaxAmount(tax);
+        sale.setTotalAmount(afterDiscount);
     }
 
     /**

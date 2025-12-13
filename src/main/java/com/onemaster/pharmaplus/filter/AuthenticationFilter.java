@@ -20,7 +20,7 @@ public class AuthenticationFilter implements Filter {
             "/css/",
             "/js/",
             "/images/",
-            "/fonts/",
+            "/icons/",
             "/static/*",
     };
 

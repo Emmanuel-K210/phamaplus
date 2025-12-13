@@ -249,7 +249,7 @@
                                 <span class="fw-bold fs-5" id="subtotal">0 FCFA</span>
                             </div>
 
-                            <div class="mb-3">
+                            <!--<div class="mb-3">
                                 <label class="form-label">
                                     <i class="bi bi-percent me-1"></i>Remise
                                 </label>
@@ -263,7 +263,7 @@
                                            step="100">
                                     <span class="input-group-text">FCFA</span>
                                 </div>
-                            </div>
+                            </div>-->
 
                             <hr class="my-4">
 

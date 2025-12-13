@@ -282,7 +282,7 @@
                                        title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <a href="${pageContext.request.contextPath}/medical-receipts/print/${receipt.receiptId}"
+                                    <a href="${pageContext.request.contextPath}/medical-receipts/print?id=${receipt.receiptId}"
                                        class="btn btn-sm btn-outline-secondary"
                                        target="_blank"
                                        data-bs-toggle="tooltip"

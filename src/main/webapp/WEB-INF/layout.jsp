@@ -6,9 +6,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><c:out value="${pageTitle}"/> - PharmaPlus</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="${pageContext.request.contextPath}/static/icons/bootstrap-icons-1.13.1/bootstrap-icons.css" rel="stylesheet">
+  <!-- Utiliser le CDN -->
+  <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">-->
   <style>
     :root {
       --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #38ef7d 100%);
@@ -58,6 +59,18 @@
     .navbar-search {
       position: relative;
       max-width: 500px;
+    }
+
+    div.mt-2>span.badge{
+      color:#0c4128 !important;
+      font-weight: bold !important;
+    }
+
+    div.text-end>span.badge
+    ,div.info-value>span.badge
+    ,span.status-badge{
+      color:#ffffff !important;
+      font-weight: bold !important;
     }
 
     .navbar-search input {
@@ -396,7 +409,7 @@
           <i class="bi bi-list fs-3"></i>
         </button>
         <a class="navbar-brand" href="${pageContext.request.contextPath}/dashboard">
-          <i class="fas fa-pills"></i> PharmaPlus
+          <i class="bi bi-capsule-pill"></i> PharmaPlus
         </a>
       </div>
 
@@ -492,13 +505,13 @@
         <i class="bi bi-file-medical"></i>Reçus Médicaux
       </a>
     </li>
-
+    <!--
     <li class="sidebar-item">
       <a class="sidebar-link ${pageActive eq 'service_medical' ? 'active' : ''}" href="${pageContext.request.contextPath}/medical-receipts/services/manage">
         <i class="bi bi-tags"></i>
         <span>Services Médicaux</span>
       </a>
-    </li>
+    </li>-->
 
     <c:if test="${sessionScope.role eq 'ADMIN'}">
       <li class="sidebar-item">
@@ -535,7 +548,6 @@
     <p class="mb-0 text-muted">© 2025 oneMaster - Gestion Pharmaceutique Moderne</p>
   </div>
 </footer>
-<script src="${pageContext.request.contextPath}/static/js/app.js" defer></script>
 <script src="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js" defer></script>
 <script>
   function toggleSidebar() {

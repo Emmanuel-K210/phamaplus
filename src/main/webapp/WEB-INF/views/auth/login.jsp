@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - PharmaPlus</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/style.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/icons/bootstrap-icons-1.13.1/bootstrap-icons.min.css" rel="stylesheet">
@@ -322,8 +321,6 @@
         </div>-->
     </div>
 </div>
-<script src="${pageContext.request.contextPath}/static/js/app.js"></script>
 <script src="${pageContext.request.contextPath}/static/bootstrap-5.0.2-dist/js/bootstrap.bundle.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
